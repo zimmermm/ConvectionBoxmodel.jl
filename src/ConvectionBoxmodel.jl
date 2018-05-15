@@ -8,16 +8,58 @@ with expanding box size
 =========================================#
 
 #using DifferentialEquations
-using OrdinaryDiffEq
+using DifferentialEquations
+using ODEInterfaceDiffEq
 using Interpolations: interpolate, Gridded, Linear
+using DataFrames
+using Calculus: derivative
+using DataFrames
+using CSV
 
-export	ContinuousBathymetryObject,
-		LakeModelObject,
+export	ContinuousBathymetryInterface,
+		LakeModelInterface,
 		solve_boxmodel,
 		interp1d,
+		interp1d!,
+		trapz,
 		datetime_to_days,
 		days_to_datetime
 
+export	ContinuousBathymetry,
+		LakePhysicsInterface,
+		ConvectionLakePhysicsInterface,
+		ConstantRate,
+		FirstOrderRate,
+		Disable,
+		FermiProfile,
+		StepProfile,
+		GompertzProfile,
+		DataProfile,
+		MOBGrowthModel,
+		MOBGrowthModelInterface,
+		NoBiomass,
+		fully_mixed,
+		mixed_to,
+		forcing_from_dataset,
+		initial_T_profile_from_simstrat_ic,
+		initial_T_profile_from_simstrat_output
+
+export @load_prototype, call_prototype
+
+macro load_prototype(path)
+	quote
+		file = open($(esc(path)))
+		s = readstring(file)
+		close(file)
+		eval(parse(s))
+	end
+end
+
+function call_prototype(f, args...)
+	Base.invokelatest(f, args...)
+end
+
+# generates a function f(x)->y that interpolates over the 1d data (x,y) provided as arguments
 function interp1d(x::Array{Float64,1}, y::Array{Float64,1})
 	itp = interpolate((x,), y, Gridded(Linear()))
 	function interpolated_at(xi)
@@ -27,112 +69,25 @@ function interp1d(x::Array{Float64,1}, y::Array{Float64,1})
 end
 precompile(interp1d, (Array{Float64,1}, Array{Float64,1}))
 
-#===================================
-Bathymetry
-===================================#
+function trapz(x::Array{Float64,1}, y::Array{Float64,1})
+	dx = x[2:end]-x[1:end-1]
+	yt = y[1:end-1]#(y[1:end-1]+y[2:end])/2.
+	[0;cumsum(yt.*dx)]
+	#itp = interp1d(x,y)
+	#f=cumsum(Fun(itp, x[1]..x[end]))
+	#[f(xi) for xi in x]
+end
+precompile(trapz, (Array{Float64,1}, Array{Float64,1}))
 
-# Object describing a continuous bathymetry
-struct ContinuousBathymetryObject
-	# quick access properties
-	surface_area::Float64
-	total_volume::Float64
-	depth::Float64
-	# functions
-	area::Function
-	volume_above::Function
+function interp1d!(x,y)
+	return interp1d(convert(Array{Float64}, x), convert(Array{Float64}, y))
 end
 
-#===================================
-Lake Model
-===================================#
-
-# Object holding user defined functions
-struct LakeModelObject
-	bathymetry::ContinuousBathymetryObject
-
-	initial_condition::Array{Float64,1}
-
-	# static profiles
-	lake_temperature::Function
-	concentration_profile::Function
-	
-	# thickening rate of mixed layer
-	dhdt::Function
-	# heat flux
-	dHdt::Function
-	# atmospheric exchange
-	Fatm::Function
-	
-	biomass_growth_term::Function
-
-	starttime::Float64
-	endtime::Float64
-	model_callback::ContinuousCallback
-end
-
-function datetime_to_days(datetime::DateTime)
-	(datetime-DateTime(1970)).value/1e3/3600/24.
-end
-precompile(datetime_to_days, (DateTime,))
-
-function days_to_datetime(days)
-	DateTime(1970)+Dates.Day(days)
-end
-precompile(days_to_datetime, (Float64,))
-precompile(days_to_datetime, (Int64,))
-
-#===================================
-Boxmodel
-===================================#
-
-# Definition of the ODE System
-function boxmodel_ode(du,u,lakemodel,t)
-	h_mix, V, C, B, T, Qatm, Qmix, H = u
-
-	# include morphology to support non-equidistant time steps
-	dhdt = lakemodel.dhdt(u, t)
-	dVdt = dhdt*lakemodel.bathymetry.area(h_mix)
-
-	# Flux to the atmosphere
-	dQatm = lakemodel.Fatm(u,t)*lakemodel.bathymetry.surface_area
-	# Flux from hypolimnion into mixed layer
-	dQmix = dVdt*lakemodel.concentration_profile(h_mix)
-
-	dHdt = 1/V*lakemodel.dHdt(u,t)*lakemodel.bathymetry.surface_area
-
-	# basic ODE for expanding box size
-	dCdt = 1/V*(dQmix-dVdt*C)+1/V*dQatm
-	dBdt = -1/V*dVdt*B
-	dTdt = 1/V*dVdt*(lakemodel.lake_temperature(h_mix)-T)+1/V*lakemodel.dHdt(u,t)*lakemodel.bathymetry.surface_area
-
-	mu = lakemodel.biomass_growth_term(u, t)
-	du[:] = [dhdt, dVdt, dCdt, dBdt, dTdt, dQatm, dQmix, dHdt]+mu*B
-end
-precompile(boxmodel_ode, (Array{Float64,1}, Array{Float64,1}, LakeModelObject, Float64))
-
-
-# solver
-function solve_boxmodel(lakemodel)
-	# assemble initial conditions
-	h_mix0, C0, B0, T0 = lakemodel.initial_condition
-	V0 = lakemodel.bathymetry.volume_above(h_mix0)
-	# diagnostic variables
-	Qatm0 = 0.
-	Qmix0 = 0.
-	H0 = 0.
-	u0 = [h_mix0, V0, C0, B0, T0, Qatm0, Qmix0, H0]
-
-	# tspan
-	tspan = (lakemodel.starttime,lakemodel.endtime)
-	
-	# ODEProblem
-	prob = ODEProblem(boxmodel_ode,u0,tspan,lakemodel,callback=lakemodel.model_callback)
-
-	# solve
-	@time solve(prob, Rodas5(), reltol=1e-5,abstol=1e-5)
-end
-precompile(solve_boxmodel, (LakeModelObject,))
-
-include("ConvectionBoxmodelToolbox.jl")
+include("core.jl")
+include("bathymetries.jl")
+include("lakephysics.jl")
+include("profileshapes.jl")
+include("growthmodels.jl")
+include("callbacks.jl")
 
 end # module
