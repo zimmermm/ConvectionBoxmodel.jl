@@ -95,7 +95,7 @@ function boxmodel_ode(du,u,lakemodel,t)
 	du[8] = du[8]*V
 	return
 end
-precompile(boxmodel_ode_intern, (Array{Float64,1}, Array{Float64,1}, LakeModelInterface, Float64))
+precompile(boxmodel_ode, (Array{Float64,1}, Array{Float64,1}, LakeModelInterface, Float64))
 
 # solver
 function solve_boxmodel(lakemodel)
