@@ -222,7 +222,9 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	# Wind penetration depth
 	#########################################
 	# Monin-Obukhov length scale (Tedford 2014)
-	L_MO(u,t) = u_w(f_wind*forcing.wind_speed(t))^3/(κ*buoyancy_flux(u,t))
+	#L_MO(u,t) = u_w(f_wind*forcing.wind_speed(t))^3/(κ*buoyancy_flux(u,t))
+	L_MO(u,t,thres) = u_w(f_wind*forcing.wind_speed(t))^3/(κ*thres)
+	L_MO(u,t) = L_MO(u,t,1e-8)
 	AML(u,t) = δv(f_wind*forcing.wind_speed(t))
 	
 
