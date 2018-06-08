@@ -54,6 +54,7 @@ struct LakePhysicsInterface
 	ϵ::Function
 	ϵ_B::Function
 	ϵ_P::Function
+	ϵ_Pz::Function
 	L_MO::Function
 	k::Function
 	k_B::Function
@@ -196,7 +197,8 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	###############
 
 	# Read et al.
-	ϵ_read_u(u,t)=u_w(f_wind*forcing.wind_speed(t))^3/(κ*AML(u,t))
+	ϵ_read_u_z(u,t,z)= u_w(f_wind*forcing.wind_speed(t))^3/(κ*z)
+	ϵ_read_u(u,t)= ϵ_read_u_z(u,t,AML(u,t))
 	ϵ_read_B(u,t)=	begin 
 				B0 = buoyancy_flux(u,t)
 				if B0 < 0.
@@ -230,6 +232,7 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 
 	ϵ_model = ϵ_read
 	ϵ_model_u = ϵ_read_u
+	ϵ_model_u_z = ϵ_read_u_z
 	ϵ_model_B = ϵ_read_B
 
 	k_model = k_ch4°(ϵ_model)
@@ -240,7 +243,7 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	Fatm_model_B = Fatm°(k_model_B)
 	F_diff(u,t) = 1.e-6*1000000/(16-u[1])
 
-	LakePhysicsInterface(dhdt, dTdt, buoyancy_flux, ϵ_model, ϵ_model_B, ϵ_model_u, L_MO, k_model, k_model_B, k_model_u, Fatm_model, Fatm_model_B, Fatm_model_u, F_diff)
+	LakePhysicsInterface(dhdt, dTdt, buoyancy_flux, ϵ_model, ϵ_model_B, ϵ_model_u, ϵ_model_u_z, L_MO, k_model, k_model_B, k_model_u, Fatm_model, Fatm_model_B, Fatm_model_u, F_diff)
 end
 precompile(ConvectionLakePhysicsInterface, (Function, Function, Function, ForcingInterface, Float64))
 
