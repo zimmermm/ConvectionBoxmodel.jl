@@ -48,6 +48,7 @@ Lake Physics
 ===================================#
 
 struct LakePhysicsInterface
+	N2::Function
 	dhdt::Function
 	dHdt::Function
 	Ba::Function
@@ -243,7 +244,7 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	Fatm_model_B = Fatm°(k_model_B)
 	F_diff(u,t) = 1.e-6*1000000/(16-u[1])
 
-	LakePhysicsInterface(dhdt, dTdt, buoyancy_flux, ϵ_model, ϵ_model_B, ϵ_model_u, ϵ_model_u_z, L_MO, k_model, k_model_B, k_model_u, Fatm_model, Fatm_model_B, Fatm_model_u, F_diff)
+	LakePhysicsInterface(N2_ρ, dhdt, dTdt, buoyancy_flux, ϵ_model, ϵ_model_B, ϵ_model_u, ϵ_model_u_z, L_MO, k_model, k_model_B, k_model_u, Fatm_model, Fatm_model_B, Fatm_model_u, F_diff)
 end
 precompile(ConvectionLakePhysicsInterface, (Function, Function, Function, ForcingInterface, Float64))
 
