@@ -205,7 +205,7 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 				if B0 < 0.
 					0.
 				else
-					B0
+					0.5*B0
 				end
 			end
 
