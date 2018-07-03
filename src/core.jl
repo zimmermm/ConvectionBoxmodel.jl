@@ -72,7 +72,7 @@ Boxmodel
 
 function boxmodel_ode(du,u,lakemodel,t)
 	#h_mix, V, C, B, T, Qatm, Qmix, H, Qmox = u
-	h_mix, V, C, B, T, Qatm, Qmix, Qmox = u
+	h_mix, V, C, B, T, Qatm, Qmix, Qmox, Qdiff = u
 
 	# include morphology to support non-equidistant time steps
 	du[1] = lakemodel.dhdt(u, t)*3600*24
@@ -84,6 +84,7 @@ function boxmodel_ode(du,u,lakemodel,t)
 	du[7] = du[2]*lakemodel.concentration_profile(h_mix)+lakemodel.F_diff(u,t)*lakemodel.bathymetry.area(h_mix)*3600*24
 	# MOX
 	du[8] = 0
+	du[9] = lakemodel.F_diff(u,t)*lakemodel.bathymetry.area(h_mix)*3600*24
 
 	# basic ODE for expanding box size
 	du[3] = 1/V*(du[7]-du[2]*C-du[6])
@@ -107,7 +108,8 @@ function solve_boxmodel(lakemodel)
 	Qmix0 = 0.
 	Qmox0 = 0.
 	H0 = 0.
-	u0 = [h_mix0, V0, C0, B0, T0, Qatm0, Qmix0, Qatm0]
+	Qdiff0 = 0.
+	u0 = [h_mix0, V0, C0, B0, T0, Qatm0, Qmix0, Qatm0, Qdiff0]
 
 	# tspan
 	tspan = (lakemodel.starttime,lakemodel.endtime)

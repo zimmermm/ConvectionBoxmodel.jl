@@ -242,7 +242,8 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	Fatm_model = Fatm°(k_model)
 	Fatm_model_u = Fatm°(k_model_u)
 	Fatm_model_B = Fatm°(k_model_B)
-	F_diff(u,t) = 1.e-6*1000000/(16-u[1])
+	#F_diff(u,t) = 1.e-6*1000000/(16-u[1])
+	F_diff(u,t) = 2.89e-8*derivative(concentration_profile, u[1])
 
 	LakePhysicsInterface(N2_ρ, dhdt, dTdt, buoyancy_flux, ϵ_model, ϵ_model_B, ϵ_model_u, ϵ_model_u_z, L_MO, k_model, k_model_B, k_model_u, Fatm_model, Fatm_model_B, Fatm_model_u, F_diff)
 end
