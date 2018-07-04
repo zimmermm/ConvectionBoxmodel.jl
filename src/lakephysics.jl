@@ -42,6 +42,26 @@ function forcing_from_dataset(path)
 end
 precompile(forcing_from_dataset, (String,))
 
+struct InflowInterface
+	flow::Function
+	temperature::Function
+end
+
+function inflow_from_dataset(path)
+	# load simstrat forcing dataset
+	inflow_df = CSV.read(path, delim="\t")
+
+	##########################################
+	# interpolators for individual data series
+	##########################################
+	timestamps = forcing_df[:t]
+	flow = interp1d!(timestamps, forcing_df[Symbol("Flow")])
+	temperature = interp1d!(timestamps, forcing_df[Symbol("Temp")]+273.15)
+
+	InflowInterface(flow, temperature)
+end
+precompile(inflow_from_dataset, (String,))
+
 
 #===================================
 Lake Physics
@@ -68,7 +88,7 @@ end
 
 
 # Constructor for Convective Lake Physics
-function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, concentration_profile, forcing, A=0.2)
+function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, A=0.2)
 	###########################
 	# Model Constants
 	###########################
