@@ -54,9 +54,9 @@ function inflow_from_dataset(path)
 	##########################################
 	# interpolators for individual data series
 	##########################################
-	timestamps = forcing_df[:t]
-	flow = interp1d!(timestamps, forcing_df[Symbol("Flow")])
-	temperature = interp1d!(timestamps, forcing_df[Symbol("Temp")]+273.15)
+	timestamps = inflow_df[:t]
+	flow = interp1d!(timestamps, inflow_df[Symbol("Flow")])
+	temperature = interp1d!(timestamps, inflow_df[Symbol("Temp")]+273.15)
 
 	InflowInterface(flow, temperature)
 end
