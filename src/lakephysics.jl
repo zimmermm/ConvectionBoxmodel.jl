@@ -49,7 +49,7 @@ end
 
 function inflow_from_dataset(path)
 	# load simstrat forcing dataset
-	inflow_df = CSV.read(path, delim="\t")
+	inflow_df = CSV.read(path, delim=",")
 
 	##########################################
 	# interpolators for individual data series
