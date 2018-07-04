@@ -41,6 +41,7 @@ export	ContinuousBathymetry,
 		fully_mixed,
 		mixed_to,
 		forcing_from_dataset,
+		inflow_from_dataset,
 		initial_T_profile_from_simstrat_ic,
 		initial_T_profile_from_simstrat_output
 
