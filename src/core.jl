@@ -118,6 +118,6 @@ function solve_boxmodel(lakemodel)
 	prob = ODEProblem(boxmodel_ode,u0,tspan,lakemodel,callback=lakemodel.model_callback)
 
 	# solve
-	@time solve(prob, Rosenbrock23(), reltol=1e-3,abstol=1e-3, dtmax=1./24.)
+	@time solve(prob, Rosenbrock23(), reltol=1e-3, abstol=1e-3, dtmax=1./24., force_dtmin=true)
 end
 precompile(solve_boxmodel, (LakeModelInterface,))

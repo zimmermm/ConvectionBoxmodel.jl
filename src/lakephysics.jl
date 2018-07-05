@@ -88,7 +88,7 @@ end
 
 
 # Constructor for Convective Lake Physics
-function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, A=0.2)
+function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A=0.2)
 	###########################
 	# Model Constants
 	###########################
@@ -163,13 +163,15 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	#*** sensible heat
 	Hc_simstrat(U10, Tw, Ta) = -B*fu_simstrat(U10, Tw, Ta)*(Tw-Ta)
 	#*** inflow/outflow
-	Hfl(Tw,flow,temp) = rho*Cp*flow(temp-Tw)
+	Hfl(Ta,Tw,flow,temp) = rho*Cp*flow/bathymetry.surface_area*(temp-Tw)
 
 	# total heat balance [W m-2]
 	heat_flux_simstrat(U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = Hc_simstrat(U10, Tw, Ta) + He_simstrat(U10, Tw, Ta, vapour_pressure)+Ha_simstrat(Ta, cloud_cover, vapour_pressure)+Hw_simstrat(Tw)+global_radiation
 	# wrapper
-	heat_flux(u, t) = heat_flux_simstrat(f_wind*forcing.wind_speed(t), u[5], forcing.air_temperature(t), forcing.global_radiation(t), forcing.cloud_cover(t), forcing.vapour_pressure(t))+Hfl(u[5], inflow.flow(t), inflow.temp(t))
+	heat_flux(u, t) = heat_flux_simstrat(f_wind*forcing.wind_speed(t), u[5], forcing.air_temperature(t), forcing.global_radiation(t), forcing.cloud_cover(t), forcing.vapour_pressure(t))+Hfl(forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
+	#heat_flux_B(u, t) = heat_flux_simstrat(f_wind*forcing.wind_speed(t), u[5], forcing.air_temperature(t), forcing.global_radiation(t), forcing.cloud_cover(t), forcing.vapour_pressure(t))
 	dTdt(u,t) = heat_flux(u,t)/(rho*Cp)
+	#dTdt_B(u,t) = heat_flux_B(u,t)/(rho*Cp) 
 
 	# Buoyancy foring: Convective thickening of the mixed layer
 	##########################################
