@@ -9,7 +9,6 @@ with expanding box size
 
 #using DifferentialEquations
 using DifferentialEquations
-using ODEInterfaceDiffEq
 using Interpolations: interpolate, Gridded, Linear
 using DataFrames
 using Calculus: derivative
@@ -19,6 +18,7 @@ using CSV
 export	ContinuousBathymetryInterface,
 		LakeModelInterface,
 		solve_boxmodel,
+		solve_boxmodel_montecarlo,
 		interp1d,
 		interp1d!,
 		trapz,
@@ -35,6 +35,7 @@ export	ContinuousBathymetry,
 		StepProfile,
 		GompertzProfile,
 		DataProfile,
+		MOBGrowthModelLibrary,
 		MOBGrowthModel,
 		MOBGrowthModelInterface,
 		NoBiomass,

@@ -31,11 +31,12 @@ function forcing_from_dataset(path)
 	G = forcing_df[Symbol("Fsol (W/m2)")]
 	C = forcing_df[Symbol("cloud coverage")]
 
-	Fdir = (1.-C)./((1.-C)+0.5*C)
-	Fdiff = (0.5*C)./((1.-C)+0.5*C)
-	Alb_dir = 0.2
-	Alb_diff = 0.066
-	Hs = G.*Fdir*(1-Alb_dir)+G.*Fdiff*(1-Alb_diff)
+	#Fdir = (1.-C)./((1.-C)+0.5*C)
+	#Fdiff = (0.5*C)./((1.-C)+0.5*C)
+	#Alb_dir = 0.2
+	#Alb_diff = 0.066
+	#Hs = G.*Fdir*(1-Alb_dir)+G.*Fdiff*(1-Alb_diff)
+	Hs = (1-0.08)*G
 	global_radiation = interp1d!(timestamps, Hs)
 
 	ForcingInterface(air_temperature, cloud_cover, vapour_pressure, global_radiation, wind_speed)
@@ -88,7 +89,7 @@ end
 
 
 # Constructor for Convective Lake Physics
-function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A=0.2)
+function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3)
 	###########################
 	# Model Constants
 	###########################
@@ -149,16 +150,16 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	# negative flux: cooling
 	#*** Longwave
 	# emissivity
-	Ea(Ta, cloud_cover, vapour_pressure) = (1+0.17*cloud_cover^2)*1.24*(vapour_pressure/Ta)^(1/7)
+	Ea(Ta, cloud_cover, vapour_pressure) = (1+0.17*cloud_cover^2)*1.24*(vapour_pressure/Ta)^(1./7.)
 	# atmospheric longwave radiation
-	Ha_simstrat(Ta, cloud_cover, vapour_pressure) = a*(1-A_L)*Ea(Ta, cloud_cover, vapour_pressure)*σ*Ta^4
+	Ha_simstrat(Ta, cloud_cover, vapour_pressure) = (1.-A_L)*Ea(Ta, cloud_cover, vapour_pressure)*σ*Ta^4
 	# water longwave radiation
 	Hw_simstrat(Tw) = -0.972*σ*Tw^4
 	#*** Shortwave
 	# is given by forcing.global_radiation(t) (already corrected for albedo)
 	#*** evaporation & condensation
 	fu_simstrat(U10, Tw, Ta) = 4.4+1.82*U10^2+0.26*(Tw-Ta)
-	e_s_simstrat(Tw, Ta)=10^((0.7859+0.03477*(Tw-273.15))/(1+0.00412*(Tw-273.15)))*(1+1e-6*p_air*(4.5+0.00006*(Tw-273.15)^2))
+	e_s_simstrat(Tw, Ta)=6.107*10^(7.5*(Tw-273.15)/(237.3+(Tw-273.15)))#10^((0.7859+0.03477*(Tw-273.15))/(1+0.00412*(Tw-273.15)))*(1+1e-6*p_air*(4.5+6e-5*(Tw-273.15)^2))#6.107*10^(7.5*(Tw-272.15)/(237.3+(Tw-273.15)))#6.112*exp((17.62*(Tw-273.15))/(243.12+Tw))#10^((0.7859+0.03477*(Tw-273.15))/(1+0.00412*(Tw-273.15)))*(1+1e-6*p_air*(4.5+0.00006*(Tw-273.15)^2))
 	He_simstrat(U10, Tw, Ta, vapour_pressure) = -fu_simstrat(U10, Tw, Ta)*(e_s_simstrat(Tw, Ta)-vapour_pressure)
 	#*** sensible heat
 	Hc_simstrat(U10, Tw, Ta) = -B*fu_simstrat(U10, Tw, Ta)*(Tw-Ta)
@@ -166,9 +167,9 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	Hfl(Ta,Tw,flow,temp) = rho*Cp*flow/bathymetry.surface_area*(temp-Tw)
 
 	# total heat balance [W m-2]
-	heat_flux_simstrat(U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = Hc_simstrat(U10, Tw, Ta) + He_simstrat(U10, Tw, Ta, vapour_pressure)+Ha_simstrat(Ta, cloud_cover, vapour_pressure)+Hw_simstrat(Tw)+global_radiation
+	heat_flux_simstrat(U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(U10, Tw, Ta) + He_simstrat(U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(Ta, cloud_cover, vapour_pressure)+Hw_simstrat(Tw)+cheat3*global_radiation
 	# wrapper
-	heat_flux(u, t) = heat_flux_simstrat(f_wind*forcing.wind_speed(t), u[5], forcing.air_temperature(t), forcing.global_radiation(t), forcing.cloud_cover(t), forcing.vapour_pressure(t))+Hfl(forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
+	heat_flux(u, t) = (heat_flux_simstrat(f_wind*forcing.wind_speed(t), u[5], forcing.air_temperature(t), forcing.global_radiation(t), forcing.cloud_cover(t), forcing.vapour_pressure(t)))#+Hfl(forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
 	#heat_flux_B(u, t) = heat_flux_simstrat(f_wind*forcing.wind_speed(t), u[5], forcing.air_temperature(t), forcing.global_radiation(t), forcing.cloud_cover(t), forcing.vapour_pressure(t))
 	dTdt(u,t) = heat_flux(u,t)/(rho*Cp)
 	#dTdt_B(u,t) = heat_flux_B(u,t)/(rho*Cp) 
@@ -180,6 +181,9 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	# thickening rate
 	# Zilitinkevich 1991
 	dhdt(u, t) = begin
+					if u[1] > 16
+						return 0
+					end
 					B0 = buoyancy_flux(u,t)
 					# no thermocline erosion during warming
 					# (we also assume that the thermocline is not rising anymore)
@@ -267,11 +271,11 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	Fatm_model_u = Fatm°(k_model_u)
 	Fatm_model_B = Fatm°(k_model_B)
 	#F_diff(u,t) = 1.e-6*1000000/(16-u[1])
-	F_diff(u,t) = 2.89e-8*derivative(concentration_profile, u[1])
+	F_diff(u,t) = max(4e-8, 2.11e-8*u[1]-1.57e-7)/bathymetry.area(u[1])
 
 	LakePhysicsInterface(N2_ρ, dhdt, dTdt, buoyancy_flux, ϵ_model, ϵ_model_B, ϵ_model_u, ϵ_model_u_z, L_MO, k_model, k_model_B, k_model_u, Fatm_model, Fatm_model_B, Fatm_model_u, F_diff)
 end
-precompile(ConvectionLakePhysicsInterface, (Function, Function, Function, ForcingInterface, Float64))
+precompile(ConvectionLakePhysicsInterface, (Function, Function, Function, ForcingInterface, InflowInterface, ContinuousBathymetryInterface, Float64, Float64, Float64, Float64))
 
 # Constructor for processes at constant rate
 function ConstantRate(r)
