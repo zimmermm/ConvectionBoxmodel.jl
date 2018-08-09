@@ -31,11 +31,14 @@ function forcing_from_dataset(path)
 	G = forcing_df[Symbol("Fsol (W/m2)")]
 	C = forcing_df[Symbol("cloud coverage")]
 
+	## Wuest et al.
 	#Fdir = (1.-C)./((1.-C)+0.5*C)
 	#Fdiff = (0.5*C)./((1.-C)+0.5*C)
 	#Alb_dir = 0.2
 	#Alb_diff = 0.066
 	#Hs = G.*Fdir*(1-Alb_dir)+G.*Fdiff*(1-Alb_diff)
+
+	## Simstrat
 	Hs = (1-0.08)*G
 	global_radiation = interp1d!(timestamps, Hs)
 
@@ -131,9 +134,9 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	const bi = [0.8181, -3.85e-3, 4.96e-5]
 
 	density(T,S) =	begin
-		    			const Tgrad = T-273.15
+						const Tgrad = T-273.15
 						const Ti = [Tgrad^i for i in 0:6]
-						
+
 						# approximate density
 						dot(ai, Ti)+S*dot(bi, Ti[1:3])
 					end
@@ -142,7 +145,13 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	#########################
 	# N2 based on gradient of initial temperature profile
 	density_profile(depth) = density(temperature_profile(depth),salinity_profile(depth))
-	N2_ρ(depth) = g/density_profile(depth)*derivative(density_profile, depth)
+	N2_ρ(depth,Tmix) = begin
+							ρmix = density(Tmix, 0.1)  # density in mixed layer. assumption that salinity in mixed layer is constantly 0.1 PSU
+							ρhypo = density_profile(depth)  # density of hypolimnion at mixed layer depth
+							ρav = (ρmix+ρhypo)/2  # average density
+							dρdz = (ρhypo-ρmix)/0.1  # density gradient. assumption that gradient is 0.1m thick
+							g/ρhypo*dρdz  # Brunt-Väisälä frequency
+						end
 
 	# Heat flux at the surface
 	##########################
@@ -170,9 +179,7 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	heat_flux_simstrat(U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(U10, Tw, Ta) + He_simstrat(U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(Ta, cloud_cover, vapour_pressure)+Hw_simstrat(Tw)+cheat3*global_radiation
 	# wrapper
 	heat_flux(u, t) = (heat_flux_simstrat(f_wind*forcing.wind_speed(t), u[5], forcing.air_temperature(t), forcing.global_radiation(t), forcing.cloud_cover(t), forcing.vapour_pressure(t)))#+Hfl(forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
-	#heat_flux_B(u, t) = heat_flux_simstrat(f_wind*forcing.wind_speed(t), u[5], forcing.air_temperature(t), forcing.global_radiation(t), forcing.cloud_cover(t), forcing.vapour_pressure(t))
 	dTdt(u,t) = heat_flux(u,t)/(rho*Cp)
-	#dTdt_B(u,t) = heat_flux_B(u,t)/(rho*Cp) 
 
 	# Buoyancy foring: Convective thickening of the mixed layer
 	##########################################
@@ -181,17 +188,18 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	# thickening rate
 	# Zilitinkevich 1991
 	dhdt(u, t) = begin
+					# no thermocline deepening when the bottom of the lake is reached
+					# should be given as parameter in future versions!!
 					if u[1] > 16
 						return 0
 					end
 					B0 = buoyancy_flux(u,t)
 					# no thermocline erosion during warming
-					# (we also assume that the thermocline is not rising anymore)
+					# no thermocline erosion if mixed layer is warmer than hypolimnion
 					if B0<0 | (u[5]>temperature_profile(u[1]))
 						return 0
 					else
-						#println(N2_ρ(u[1]))
-						v=(1+2*A)*B0/(N2_ρ(u[1])*u[1])
+						v=(1+2*A)*B0/(N2_ρ(u[1], u[5])*u[1])
 						# don't allow rising of the thermocline
 						if v < 0
 							return 0
@@ -204,7 +212,7 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	# Buoyancy
 	B_w(B0,hmix)=(B0*hmix)^(1/3)
 
-	# Wind forcing 
+	# Wind forcing
 	##########################
 	# Simstrat 1.6
 	CD(U10) =	begin
@@ -228,7 +236,7 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	# Read et al.
 	ϵ_read_u_z(u,t,z)= u_w(f_wind*forcing.wind_speed(t))^3/(κ*z)
 	ϵ_read_u(u,t)= ϵ_read_u_z(u,t,AML(u,t))
-	ϵ_read_B(u,t)=	begin 
+	ϵ_read_B(u,t)=	begin
 				B0 = buoyancy_flux(u,t)
 				if B0 < 0.
 					0.
@@ -249,16 +257,15 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	k_ch4°(ϵ) = (u,t) -> η*(ϵ(u,t)*ν)^0.25*Sc_ch4_Wanninkhof(u[5])^(-0.5)
 	Fatm°(k) = (u,t) -> -k(u,t)*(u[3]-Ceq_ch4(u[5],0)*1e6)
 
-	
-	# Wind penetration depth
+	# Wind penetration depth: deprecated!
 	#########################################
 	# Monin-Obukhov length scale (Tedford 2014)
 	#L_MO(u,t) = u_w(f_wind*forcing.wind_speed(t))^3/(κ*buoyancy_flux(u,t))
 	L_MO(u,t,thres) = u_w(f_wind*forcing.wind_speed(t))^3/(κ*thres)
 	L_MO(u,t) = L_MO(u,t,1e-8)
 	AML(u,t) = δv(f_wind*forcing.wind_speed(t))
-	
 
+	# just in case we had multiple implementations and want a single point to switch between implementations
 	ϵ_model = ϵ_read
 	ϵ_model_u = ϵ_read_u
 	ϵ_model_u_z = ϵ_read_u_z
@@ -270,8 +277,7 @@ function ConvectionLakePhysicsInterface(temperature_profile, salinity_profile, c
 	Fatm_model = Fatm°(k_model)
 	Fatm_model_u = Fatm°(k_model_u)
 	Fatm_model_B = Fatm°(k_model_B)
-	#F_diff(u,t) = 1.e-6*1000000/(16-u[1])
-	F_diff(u,t) = max(4e-8, 2.11e-8*u[1]-1.57e-7)/bathymetry.area(u[1])
+	F_diff(u,t) = max(4e-8, 2.11e-8*u[1]-1.57e-7)/12*1e12/bathymetry.area(u[1])
 
 	LakePhysicsInterface(N2_ρ, dhdt, dTdt, buoyancy_flux, ϵ_model, ϵ_model_B, ϵ_model_u, ϵ_model_u_z, L_MO, k_model, k_model_B, k_model_u, Fatm_model, Fatm_model_B, Fatm_model_u, F_diff)
 end

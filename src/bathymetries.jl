@@ -22,8 +22,6 @@ function ContinuousBathymetry(depths::Array{Float64,1}, areas::Array{Float64,1})
 	min_depth = minimum(depths)
 	max_depth = maximum(depths)
 
-	renewal_depth = 1.5
-
 	# create object
-	ContinuousBathymetryInterface(area(min_depth), volume_above(max_depth), max_depth, volume_above(renewal_depth), area(renewal_depth), area, volume_above)
+	ContinuousBathymetryInterface(area(min_depth), volume_above(max_depth), max_depth, area, volume_above)
 end

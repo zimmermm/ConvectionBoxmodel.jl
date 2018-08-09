@@ -73,11 +73,8 @@ precompile(interp1d, (Array{Float64,1}, Array{Float64,1}))
 
 function trapz(x::Array{Float64,1}, y::Array{Float64,1})
 	dx = x[2:end]-x[1:end-1]
-	yt = y[1:end-1]#(y[1:end-1]+y[2:end])/2.
+	yt = y[1:end-1]
 	[0;cumsum(yt.*dx)]
-	#itp = interp1d(x,y)
-	#f=cumsum(Fun(itp, x[1]..x[end]))
-	#[f(xi) for xi in x]
 end
 precompile(trapz, (Array{Float64,1}, Array{Float64,1}))
 

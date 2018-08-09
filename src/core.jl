@@ -2,6 +2,9 @@
 * Data structures
 * System of ODE
 * Solver
+
+I do not follow Julias intended code style and use structures as kind of objects with properties and functions
+In future versions I might change this.. 
 =============================================#
 
 #===================================
@@ -14,8 +17,6 @@ struct ContinuousBathymetryInterface
 	surface_area::Float64
 	total_volume::Float64
 	depth::Float64
-	renewal_interface_volume::Float64
-	renewal_interface_area::Float64
 	# functions
 	area::Function
 	volume_above::Function
@@ -24,12 +25,6 @@ end
 #===================================
 Growth Model
 ===================================#
-#struct MOBGrowthModel
-#	Km::Float64
-#	Vmax::Float64
-#	y::Float64
-#end
-
 mutable struct MOBGrowthModel
 	mutate::Function
 	montecarlo_shuffle::Function
@@ -50,7 +45,7 @@ struct LakeModelInterface
 	# static profiles
 	lake_temperature::Function
 	concentration_profile::Function
-	
+
 	# thickening rate of mixed layer
 	dhdt::Function
 	# heat flux
@@ -59,9 +54,8 @@ struct LakeModelInterface
 	Fatm::Function
 	# Diffusive flux from hypolimnion
 	F_diff::Function
-	
+
 	growth_model::MOBGrowthModel
-	#biomass_growth_term::Function
 
 	starttime::Float64
 	endtime::Float64
@@ -88,7 +82,6 @@ Boxmodel
 ===================================#
 
 function boxmodel_ode(du,u,lakemodel,t)
-	#h_mix, V, C, B, T, Qatm, Qmix, H, Qmox = u
 	h_mix, V, C, B, T, Qatm, Qmix, Qmox, Qdiff = u
 
 	# include morphology to support non-equidistant time steps
@@ -161,7 +154,7 @@ function solve_boxmodel_montecarlo(lakemodel, num_monte)
 									prob_func = boxmodel_prob_func
 									#reduction = (u, data, I) -> (append!(u,data),false),
 									#u_init = u0
-								   )
+								)
 	# solve
 	@time solve(montecarlo, Rosenbrock23(autodiff=false), reltol=1e-2, abstol=1e-2, dtmax=1./24., num_monte=num_monte, parallel_type=:none)
 end
@@ -193,6 +186,7 @@ function boxmodel_prob_func(prob, i, repeat)
 			(1.0+randn()/8)*prob.u0[4],  # B0
 			(1.0+randn()/244)*prob.u0[5],  # T0
 			0, 0, 0, 0
-		  ]
+		]
 	ODEProblem(prob.f, u0, prob.tspan, lakemodel, callback=prob.callback)
 end
+precompile(boxmodel_prob_func, (ODEProblem, Int64, Int64))
