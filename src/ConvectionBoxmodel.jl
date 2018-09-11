@@ -17,6 +17,7 @@ using Dates
 
 export	@load_prototype,
 		call_prototype
+
 export	interp1d,
 		interp1d!,
 		Interpolation,
@@ -56,7 +57,7 @@ struct Interpolation{InterpolationMethod}
 	at::Function
 end
 
-typealias LinearInterpolation Interpolation{:Linear}
+const LinearInterpolation = Interpolation{:Linear}
 (::Type{Interpolation{:Linear}})(x::Array{<:Real,1}, y::Array{<:Real,1}) = Interpolation{:Linear}(x, y, interp1d(x, y))
 (::Type{Interpolation{:Linear}})(x::Array{<:Float64,1}, y::Array{<:Int64,1}) = Interpolation{:Linear}(x, y, interp1d!(x, y))
 
