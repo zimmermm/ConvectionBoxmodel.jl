@@ -35,6 +35,9 @@ export	MOBGrowthModel,
 		mox,
 		μ
 
+export	fully_mixed,
+		mixed_to
+
 
 ####################################
 # Prototyping
@@ -89,6 +92,6 @@ include("bathymetries.jl")
 #include("lakephysics.jl")
 #include("profileshapes.jl")
 include("growthmodels.jl")
-#include("callbacks.jl")
+include("callbacks.jl")
 
 end # module
