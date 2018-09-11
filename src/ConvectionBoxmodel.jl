@@ -21,7 +21,9 @@ export	@load_prototype,
 export	interp1d,
 		interp1d!,
 		Interpolation,
-		LinearInterpolation
+		LinearInterpolation,
+		top,
+		bottom
 
 export	surface_area,
 		volume_above,
