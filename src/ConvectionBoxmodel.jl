@@ -23,6 +23,10 @@ export	interp1d,
 		Interpolation,
 		LinearInterpolation
 
+export	surface_area,
+		volume_above,
+		total_volume
+
 
 ####################################
 # Prototyping
@@ -43,7 +47,7 @@ end
 ####################################
 # Linear Interpolation
 ####################################
-interp1d{T<:Number}(x::Array{T,1}, y::Array{T,1}) = begin
+interp1d(x::Array{T,1}, y::Array{T,1}) where T<:Number = begin
 							itp = interpolate((x,), y, Gridded(Linear()))
 							(at) -> itp[at]
 						end
@@ -73,7 +77,7 @@ bottom(i::Interpolation{<:Any}) = i.x[end]
 
 
 #include("core.jl")
-#include("bathymetries.jl")
+include("bathymetries.jl")
 #include("lakephysics.jl")
 #include("profileshapes.jl")
 #include("growthmodels.jl")

@@ -1,27 +1,21 @@
 #===================================
 Bathymetry Implementations
 ===================================#
+# Datastructure is a (depth, area) Interpolation
 
-# Constructor for a linearly interpolated bathymetry
-function ContinuousBathymetry(depths::Array{Float64,1}, areas::Array{Float64,1})
-	# function definitions
-	area = interp1d(depths, areas)
+# additional functionality
+surface_area(bathymetry::Interpolation{<:Any}) = bathmyetry.y[0]
+volume_above(bathymetry::Interpolation{<:Any},depth; dh=0.01) = begin
+									grid = equigrid(top(bathymetry), depth, dh=dh)
+									areas_i = bathymetry.at(grid)
+									sum((areas_i[1:end-1]+areas_i[2:end])/2.)*dh
+								end
+total_volume(bathymetry::Interpolation{<:Any}; dh=0.01) = volume_above(bathymetry, bottom(bathymetry), dh=dh)
 
-	function equigrid(x0,xend,dh=0.01)
-		n = round((xend-x0)/dh)
-		dh = (xend-x0)/n
-		collect(x0:dh:xend)
-	end
 
-	function volume_above(depth, dh=0.01)
-		grid = equigrid(0.,depth,dh)
-		areas_i = area(grid)
-		sum((areas_i[1:end-1]+areas_i[2:end])/2.)*dh
-	end
-
-	min_depth = minimum(depths)
-	max_depth = maximum(depths)
-
-	# create object
-	ContinuousBathymetryInterface(area(min_depth), volume_above(max_depth), max_depth, area, volume_above)
+# helper
+function equigrid(x0,xend; dh=0.01)
+	n = round((xend-x0)/dh)
+	dh = (xend-x0)/n
+	collect(x0:dh:xend)
 end
