@@ -29,6 +29,12 @@ export	surface_area,
 		volume_above,
 		total_volume
 
+export	MOBGrowthModel,
+		Nogrowth,
+		MOBMonodModel,
+		mox,
+		μ
+
 
 ####################################
 # Prototyping
@@ -82,7 +88,7 @@ bottom(i::Interpolation{<:Any}) = i.x[end]
 include("bathymetries.jl")
 #include("lakephysics.jl")
 #include("profileshapes.jl")
-#include("growthmodels.jl")
+include("growthmodels.jl")
 #include("callbacks.jl")
 
 end # module
