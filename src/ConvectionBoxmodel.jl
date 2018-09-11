@@ -12,42 +12,20 @@ using DifferentialEquations
 using Interpolations: interpolate, Gridded, Linear
 using DataFrames
 using Calculus: derivative
-using DataFrames
 using CSV
+using Dates
 
-export	ContinuousBathymetryInterface,
-		LakeModelInterface,
-		solve_boxmodel,
-		solve_boxmodel_montecarlo,
-		interp1d,
+export	@load_prototype,
+		call_prototype
+export	interp1d,
 		interp1d!,
-		trapz,
-		datetime_to_days,
-		days_to_datetime
+		Interpolation,
+		LinearInterpolation
 
-export	ContinuousBathymetry,
-		LakePhysicsInterface,
-		ConvectionLakePhysicsInterface,
-		ConstantRate,
-		FirstOrderRate,
-		Disable,
-		FermiProfile,
-		StepProfile,
-		GompertzProfile,
-		DataProfile,
-		MOBGrowthModelLibrary,
-		MOBGrowthModel,
-		MOBGrowthModelInterface,
-		NoBiomass,
-		fully_mixed,
-		mixed_to,
-		forcing_from_dataset,
-		inflow_from_dataset,
-		initial_T_profile_from_simstrat_ic,
-		initial_T_profile_from_simstrat_output
 
-export @load_prototype, call_prototype
-
+####################################
+# Prototyping
+####################################
 macro load_prototype(path)
 	quote
 		file = open($(esc(path)))
@@ -61,32 +39,43 @@ function call_prototype(f, args...)
 	Base.invokelatest(f, args...)
 end
 
-# generates a function f(x)->y that interpolates over the 1d data (x,y) provided as arguments
-function interp1d(x::Array{Float64,1}, y::Array{Float64,1})
-	itp = interpolate((x,), y, Gridded(Linear()))
-	function interpolated_at(xi)
-		itp[xi]
-	end
-	return interpolated_at
-end
+####################################
+# Linear Interpolation
+####################################
+interp1d{T<:Number}(x::Array{T,1}, y::Array{T,1}) = begin
+							itp = interpolate((x,), y, Gridded(Linear()))
+							(at) -> itp[at]
+						end
 precompile(interp1d, (Array{Float64,1}, Array{Float64,1}))
+interp1d!(x,y) = interp1d(convert(Array{Float64}, x), convert(Array{Float64}, y)) 
 
-function trapz(x::Array{Float64,1}, y::Array{Float64,1})
-	dx = x[2:end]-x[1:end-1]
-	yt = y[1:end-1]
-	[0;cumsum(yt.*dx)]
-end
-precompile(trapz, (Array{Float64,1}, Array{Float64,1}))
 
-function interp1d!(x,y)
-	return interp1d(convert(Array{Float64}, x), convert(Array{Float64}, y))
+struct Interpolation{InterpolationMethod}
+	x::Array{<:Real,1}
+	y::Array{<:Real,1}
+	at::Function
 end
 
-include("core.jl")
-include("bathymetries.jl")
-include("lakephysics.jl")
-include("profileshapes.jl")
-include("growthmodels.jl")
-include("callbacks.jl")
+typealias LinearInterpolation Interpolation{:Linear}
+(::Type{Interpolation{:Linear}})(x::Array{<:Real,1}, y::Array{<:Real,1}) = Interpolation{:Linear}(x, y, interp1d(x, y))
+(::Type{Interpolation{:Linear}})(x::Array{<:Float64,1}, y::Array{<:Int64,1}) = Interpolation{:Linear}(x, y, interp1d!(x, y))
+
+top(i::Interpolation{<:Any}) = i.x[1]
+bottom(i::Interpolation{<:Any}) = i.x[end]
+
+#function trapz(x::Array{Float64,1}, y::Array{Float64,1})
+#	dx = x[2:end]-x[1:end-1]
+#	yt = y[1:end-1]
+#	[0;cumsum(yt.*dx)]
+#end
+#precompile(trapz, (Array{Float64,1}, Array{Float64,1}))
+
+
+#include("core.jl")
+#include("bathymetries.jl")
+#include("lakephysics.jl")
+#include("profileshapes.jl")
+#include("growthmodels.jl")
+#include("callbacks.jl")
 
 end # module
