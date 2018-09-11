@@ -18,4 +18,4 @@ mox(model::NoGrowth, C::Float64) = 0
 μ(model::NoGrowth, C::Float64) = 0
 
 scale(model::MOBMonodModel, f_vmax, f_Km, f_y) = MOBMonodModel(model.Vmax*f_vmax, model.Km*f_Km, model.y*f_y)
-montecarlo_shuffle(model::MOBMonodModel) = scale(model, 1.+randn()/164., 1.+randn()/164., 1+randn()/164.)
+montecarlo_shuffle(model::MOBMonodModel) = scale(model, 1.0+randn()/164., 1.0+randn()/164., 1.0+randn()/164.)
