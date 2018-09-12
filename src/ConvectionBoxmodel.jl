@@ -95,6 +95,7 @@ bottom(i::Interpolation{<:Any}) = i.x[end]
 #include("core.jl")
 include("bathymetries.jl")
 #include("lakephysics.jl")
+include("convectionlakephysics.jl")
 include("profileshapes.jl")
 include("growthmodels.jl")
 include("callbacks.jl")

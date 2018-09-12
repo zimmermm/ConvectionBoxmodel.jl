@@ -1,0 +1,203 @@
+# traits
+abstract type DefautPhysics end
+
+# lake physics
+abstract type LakePhysics end
+
+struct ConvectionLakePhysics{Traits} <: LakePhysics
+	# constants
+	a_T::Float64
+	g::Float64
+	β::Float64
+	Mw::Float64
+	Cp::Float64
+	Cp_air::Float64
+	Lv::Float64
+	σ::Float64
+	κ::Float64
+	ν::Float64
+	ν_a::Float64
+
+	T0::Float64
+	p0::Float64
+	R::Float64
+
+	rho::Float64
+	rho_air::Float64
+	p_air::Float64
+
+	γ::Float64
+
+	# empirical constants
+	A_L::Float64
+	a::Float64
+	η::Float64
+	B::Float64
+	c1::Float64
+
+	f_wind::Float64
+
+	temperature_profile::Interpolation
+	salinity_profile::Interpolation
+	concentration_profile::Interpolation
+	forcing::MeteorologicalForcing
+	inflow::Inflow
+	bathymetry::Interpolation
+	A::Float64
+	cheat1::Float64
+	cheat2::Float64
+	cheat3::Float64
+end
+
+# convection lake physics constructor
+ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3) where Traits <: Any = begin
+		a_T = 2.14e-4 # thermal expansion [K-1]
+		g = 9.80665  # gravitational acceleration [m^2 s-1]
+		β = g*a_T
+		Mw = 18.01528/1000  # molar mass of water [kg mol-1]
+		Cp = 75.375/Mw  # specific heat capacity [J kg-1 K-1]
+		Cp_air = 1005  # specific heat capacity of air [J kg-1 K-1]
+		Lv = 2.47e6  # heat vaporization of water [J kg-1]
+		σ = 5.670367e-8  # Stefan Boltzmann constant [W m-2 K-4]
+		κ = 0.4  # Von Karman constant
+		ν = 1.5e-6  # Kinematic Viscosity of Water
+		ν_a = 1.4e-5  # Kinematic Viscosity of Air [m2 s-1]
+
+		T0 = 273.15  # Standard Temperature [K]
+		p0 = 1e5	# Standard Pressure [Pa]
+		R = 8.314  # universal gas constant
+
+		rho = 998  # density of water [kg m-3]
+		rho_air = 1.25  # density of air [kg m-3]
+		p_air = 960  # air pressure [mbar]
+
+		γ = (Cp_air*p_air)/(0.622*Lv)
+
+		# empirical constants
+		A_L = 0.03  # Longwave Alebedo [-]
+		a = 1.09  # calibration constant
+		η = 1/(2*pi)  # according to Lorke et al. #0.29 # calibration constant
+		B = 0.62  # Bowen coefficient [mbar K-1]
+		c1 = 8.6
+
+		f_wind = 0.5
+
+		ConvectionLakePhysics{Traits}(
+			a_T,
+			g,
+			β,
+			Mw,
+			Cp,
+			Cp_air,
+			Lv,
+			σ,
+			κ,
+			ν,
+			ν_a,
+
+			T0,
+			p0,
+			R,
+
+			rho,
+			rho_air,
+			p_air,
+
+			γ,
+
+			# empirical constants
+			A_L,
+			a,
+			η,
+			B,
+			c1,
+
+			f_wind,
+
+			temperature_profile,
+			salinity_profile,
+			concentration_profile,
+			forcing,
+			inflow,
+			bathymetry,
+			A,
+			cheat1,
+			cheat2,
+			cheat3
+			)
+	end
+ConvectionLakePhysics(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3) = ConvectionLakePhysics{DefaultLakePhysics}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3)
+
+# macro to define lake physics functions in short notation
+macro physicsfn(fnexpr)
+	fnrepr = repr(fnexpr)
+	fnsignature = split(fnrepr[3:end-1], "=")[1]
+	# first argument of function signature
+	fnfirstarg = split(split(match(r"\((.*?)\)", fnsignature)[1], ",")[1],"::")
+	fn_classname = fnfirstarg[1]
+	if length(fnfirstarg) > 1
+		# look for field names and prefix them with the class
+		fn_class_fieldnames = fieldnames(eval(Meta.parse(fnfirstarg[2])))
+		for field in fn_class_fieldnames
+			fnrepr = replace(fnrepr, Regex(string("(?<![\\w_])(|\\d+)(", field, ")(?![\\w_])"))=>SubstitutionString(string("\\g<1>",fn_classname, ".", field)))
+		end
+	else
+		error(string("You have to define the type of ", fn_classname ," in the function signature"))
+	end
+	eval(Meta.parse(fnrepr))
+end
+
+########################
+# lake physics functions
+########################
+
+# density
+#-----------
+ρ(T::Float64,S::Float64) =	begin
+	const ai = [999.8395, 6.7914e-2, -9.0894e-3, 1.0171e-4, -1.2846e-6, 1.1592e-8, -5.0125e-11]
+	const bi = [0.8181, -3.85e-3, 4.96e-5]
+	const Tgrad = T-273.15
+	const Ti = [Tgrad^i for i in 0:6]
+
+	# approximate density
+	dot(ai, Ti)+S*dot(bi, Ti[1:3])
+end
+
+@physicsfn ρ(p::ConvectionLakePhysics{<:DefaultPhysics}, depth) = ρ(temperature_profile.at(depth), salinity_profile.at(depth))
+
+# water column stability
+#--------------------------
+@physicsfn N2(p::ConvectionLakePhysics{<:DefaultPhysics},depth::Float64,Tmix::Float64) =	begin
+																								ρmix = density(Tmix, 0.1)  # density in mixed layer. assumption that salinity in mixed layer is constantly 0.1 PSU
+																								ρhypo = density(p, depth)  # density of hypolimnion at mixed layer depth
+																								ρav = (ρmix+ρhypo)/2  # average density
+																								dρdz = (ρhypo-ρmix)/0.1  # density gradient. assumption that gradient is 0.1m thick
+																								g/ρhypo*dρdz  # Brunt-Väisälä frequency
+																							end
+
+# Heat flux
+#----------------
+
+## Heat flux at the surface
+###########################
+## positive flux: warming
+## negative flux: cooling
+##*** Longwave
+## emissivity
+#Ea(Ta, cloud_cover, vapour_pressure) = (1+0.17*cloud_cover^2)*1.24*(vapour_pressure/Ta)^(1./7.)
+## atmospheric longwave radiation
+#Ha_simstrat(Ta, cloud_cover, vapour_pressure, σ) = (1.-A_L)*Ea(Ta, cloud_cover, vapour_pressure)*σ*Ta^4
+## water longwave radiation
+#Hw_simstrat(Tw, σ) = -0.972*σ*Tw^4
+##*** Shortwave
+## is given by forcing.global_radiation(t) (already corrected for albedo)
+##*** evaporation & condensation
+#fu_simstrat(U10, Tw, Ta) = 4.4+1.82*U10^2+0.26*(Tw-Ta)
+#e_s_simstrat(Tw, Ta)=6.107*10^(7.5*(Tw-273.15)/(237.3+(Tw-273.15)))#10^((0.7859+0.03477*(Tw-273.15))/(1+0.00412*(Tw-273.15)))*(1+1e-6*p_air*(4.5+6e-5*(Tw-273.15)^2))#6.107*10^(7.5*(Tw-272.15)/(237.3+(Tw-273.15)))#6.112*exp((17.62*(Tw-273.15))/(243.12+Tw))#10^((0.7859+0.03477*(Tw-273.15))/(1+0.00412*(Tw-273.15)))*(1+1e-6*p_air*(4.5+0.00006*(Tw-273.15)^2))
+#He_simstrat(U10, Tw, Ta, vapour_pressure) = -fu_simstrat(U10, Tw, Ta)*(e_s_simstrat(Tw, Ta)-vapour_pressure)
+##*** sensible heat
+#Hc_simstrat(U10, Tw, Ta) = -B*fu_simstrat(U10, Tw, Ta)*(Tw-Ta)
+##*** inflow/outflow
+#Hfl(Ta,Tw,flow,temp,surface_area) = rho*Cp*flow/surface_area*(temp-Tw)
+#
+#heat_flux(u, t, p::ConvectionLakePhysics) = (heat_flux_simstrat(p.constants.f_wind*p.forcing.wind_speed.at(t), u[5], p.forcing.air_temperature.at(t), p.forcing.global_radiation.at(t), p.forcing.cloud_cover.at(t), p.forcing.vapour_pressure.at(t)))#+Hfl(forcing.air_temperature(t), u[5], p.inflow.flow(t), inflow.temperature(t))
