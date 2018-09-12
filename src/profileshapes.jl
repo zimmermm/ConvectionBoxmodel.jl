@@ -16,22 +16,22 @@ function StepProfile(Qtop, Qbottom, z_bottom, z_interface, sharpness)
 end
 
 function DataProfile(path)
-	profile_data = CSV.read(path)
-	interp1d!(profile_data[Symbol("Depth")], profile_data[Symbol("Value")])
+	profile_data = CSV.read(path, types=[Array{Float64}, Array{Float64}])
+	LinearInterpolation(profile_data[Symbol("Depth")], profile_data[Symbol("Value")])
 end
 precompile(DataProfile, (String,))
 
 
-function initial_T_profile_from_simstrat_ic(path)
-	ic_df = CSV.read(path, delim="\t")
-	interp1d(-ic_df[Symbol("depth (m)")], ic_df[Symbol("T (°C)")]+273.15)
-end
-precompile(initial_T_profile_from_simstrat_ic, (String,))
-
-function initial_T_profile_from_simstrat_output(path)
-	data, header = readdlm(path, header=true)
-	df = DataFrame(data)
-	names!(df, [Symbol("$name") for name in header[1,:]])
-	df
-end
-precompile(initial_T_profile_from_simstrat_output, (String,))
+#function initial_T_profile_from_simstrat_ic(path)
+#	ic_df = CSV.read(path, delim="\t")
+#	interp1d(-ic_df[Symbol("depth (m)")], ic_df[Symbol("T (°C)")]+273.15)
+#end
+#precompile(initial_T_profile_from_simstrat_ic, (String,))
+#
+#function initial_T_profile_from_simstrat_output(path)
+#	data, header = readdlm(path, header=true)
+#	df = DataFrame(data)
+#	names!(df, [Symbol("$name") for name in header[1,:]])
+#	df
+#end
+#precompile(initial_T_profile_from_simstrat_output, (String,))

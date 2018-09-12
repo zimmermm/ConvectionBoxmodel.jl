@@ -35,6 +35,11 @@ export	MOBGrowthModel,
 		mox,
 		μ
 
+export	FermiProfile,
+		GompertzProfile,
+		StepProfile,
+		DataProfile
+
 export	fully_mixed,
 		mixed_to
 
@@ -90,7 +95,7 @@ bottom(i::Interpolation{<:Any}) = i.x[end]
 #include("core.jl")
 include("bathymetries.jl")
 #include("lakephysics.jl")
-#include("profileshapes.jl")
+include("profileshapes.jl")
 include("growthmodels.jl")
 include("callbacks.jl")
 
