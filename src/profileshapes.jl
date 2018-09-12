@@ -3,16 +3,16 @@ Profile shapes library
 ===================================#
 
 function FermiProfile(Qtop, Qbottom, z_interface, w_interface)
-	depth -> Qbottom+(Qtop-Qbottom)./(1.+exp.((depth-z_interface)/w_interface))
+	depth -> Qbottom+(Qtop-Qbottom)./(1.0+exp.((depth-z_interface)/w_interface))
 end
 
 function GompertzProfile(Qtop, Qbottom, z_interface, w_interface)
-	depth -> Qtop-(Qtop-Qbottom).*exp.(-20/w_interface.*exp.(-w_interface.*(depth-z_interface))./depth)
+	depth -> Qtop-(Qtop-Qbottom).*exp.(-20.0/w_interface.*exp.(-w_interface.*(depth-z_interface))./depth)
 end
 
 function StepProfile(Qtop, Qbottom, z_bottom, z_interface, sharpness)
-	slope = (Qbottom-Qtop)/log(1+exp(sharpness*(z_bottom-z_interface)))
-	depth -> Qtop+slope.*log.(1+exp.(sharpness*(depth-z_interface)))
+	slope = (Qbottom-Qtop)/log(1.0+exp(sharpness*(z_bottom-z_interface)))
+	depth -> Qtop+slope.*log.(1.0+exp.(sharpness*(depth-z_interface)))
 end
 
 function DataProfile(path)
