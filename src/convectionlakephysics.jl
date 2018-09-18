@@ -287,27 +287,27 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # Buoyancy foring: Convective thickening of the mixed layer
 ##########################################
 # Buoyancy Flux [m2 s-3]
-@physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:Default}, u,t) = -β*dTdt(p, u,t)
+@physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = -β*dTdt(p, u,t)
 # thickening rate
 # Zilitinkevich 1991
-#@physicsfn dhdt(p::ConvectionLakePhysics{<:Default}, u, t) = begin
-#					# no thermocline deepening when the bottom of the lake is reached
-#					# should be given as parameter in future versions!!
-#					if u[1] > 16
-#						return 0.0
-#					end
-#					B0 = buoyancy_flux(p,u,t)
-#					# no thermocline erosion during warming
-#					# no thermocline erosion if mixed layer is warmer than hypolimnion
-#					if B0<0 | (u[5]>temperature_profile.at(u[1]))
-#						return 0.0
-#					else
-#						v=(1+2*A)*B0/(N2_ρ(u[1], u[5])*u[1])
-#						# don't allow rising of the thermocline
-#						if v < 0.0
-#							return 0.0
-#						else
-#							return v
-#						end
-#					end
-#				end
+@physicsfn dhdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = begin
+					# no thermocline deepening when the bottom of the lake is reached
+					# should be given as parameter in future versions!!
+					if u[1] > 16
+						return 0.0
+					end
+					B0 = buoyancy_flux(p,u,t)
+					# no thermocline erosion during warming
+					# no thermocline erosion if mixed layer is warmer than hypolimnion
+					if B0<0 | (u[5]>temperature_profile.at(u[1]))
+						return 0.0
+					else
+						v=(1+2*A)*B0/(N2_ρ(u[1], u[5])*u[1])
+						# don't allow rising of the thermocline
+						if v < 0.0
+							return 0.0
+						else
+							return v
+						end
+					end
+				end
