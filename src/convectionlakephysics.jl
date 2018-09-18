@@ -255,26 +255,29 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # Heat flux
 #----------------
 
-## Heat flux at the surface
-###########################
-## positive flux: warming
-## negative flux: cooling
-##*** Longwave
-## emissivity
-#Ea(Ta, cloud_cover, vapour_pressure) = (1+0.17*cloud_cover^2)*1.24*(vapour_pressure/Ta)^(1./7.)
-## atmospheric longwave radiation
-#Ha_simstrat(Ta, cloud_cover, vapour_pressure, σ) = (1.-A_L)*Ea(Ta, cloud_cover, vapour_pressure)*σ*Ta^4
-## water longwave radiation
-#Hw_simstrat(Tw, σ) = -0.972*σ*Tw^4
-##*** Shortwave
-## is given by forcing.global_radiation(t) (already corrected for albedo)
-##*** evaporation & condensation
-#fu_simstrat(U10, Tw, Ta) = 4.4+1.82*U10^2+0.26*(Tw-Ta)
-#e_s_simstrat(Tw, Ta)=6.107*10^(7.5*(Tw-273.15)/(237.3+(Tw-273.15)))#10^((0.7859+0.03477*(Tw-273.15))/(1+0.00412*(Tw-273.15)))*(1+1e-6*p_air*(4.5+6e-5*(Tw-273.15)^2))#6.107*10^(7.5*(Tw-272.15)/(237.3+(Tw-273.15)))#6.112*exp((17.62*(Tw-273.15))/(243.12+Tw))#10^((0.7859+0.03477*(Tw-273.15))/(1+0.00412*(Tw-273.15)))*(1+1e-6*p_air*(4.5+0.00006*(Tw-273.15)^2))
-#He_simstrat(U10, Tw, Ta, vapour_pressure) = -fu_simstrat(U10, Tw, Ta)*(e_s_simstrat(Tw, Ta)-vapour_pressure)
-##*** sensible heat
-#Hc_simstrat(U10, Tw, Ta) = -B*fu_simstrat(U10, Tw, Ta)*(Tw-Ta)
-##*** inflow/outflow
-#Hfl(Ta,Tw,flow,temp,surface_area) = rho*Cp*flow/surface_area*(temp-Tw)
-#
-#heat_flux(u, t, p::ConvectionLakePhysics) = (heat_flux_simstrat(p.constants.f_wind*p.forcing.wind_speed.at(t), u[5], p.forcing.air_temperature.at(t), p.forcing.global_radiation.at(t), p.forcing.cloud_cover.at(t), p.forcing.vapour_pressure.at(t)))#+Hfl(forcing.air_temperature(t), u[5], p.inflow.flow(t), inflow.temperature(t))
+# Heat flux at the surface
+##########################
+# positive flux: warming
+# negative flux: cooling
+#*** Longwave
+# emissivity
+Ea(Ta, cloud_cover, vapour_pressure) = (1.0+0.17*cloud_cover^2)*1.24*(vapour_pressure/Ta)^(1.0/7.0)
+# atmospheric longwave radiation
+Ha_simstrat(Ta, cloud_cover, vapour_pressure, σ) = (1.0-A_L)*Ea(Ta, cloud_cover, vapour_pressure)*σ*Ta^4
+# water longwave radiation
+Hw_simstrat(Tw, σ) = -0.972*σ*Tw^4
+#*** Shortwave
+# is given by forcing.global_radiation(t) (already corrected for albedo)
+#*** evaporation & condensation
+fu_simstrat(U10, Tw, Ta) = 4.4+1.82*U10^2+0.26*(Tw-Ta)
+e_s_simstrat(Tw, Ta)=6.107*10^(7.5*(Tw-273.15)/(237.3+(Tw-273.15)))
+He_simstrat(U10, Tw, Ta, vapour_pressure) = -fu_simstrat(U10, Tw, Ta)*(e_s_simstrat(Tw, Ta)-vapour_pressure)
+#*** sensible heat
+Hc_simstrat(U10, Tw, Ta) = -B*fu_simstrat(U10, Tw, Ta)*(Tw-Ta)
+#*** inflow/outflow
+Hfl(Ta,Tw,flow,temp,surface_area) = rho*Cp*flow/surface_area*(temp-Tw)
+
+# total heat balance [W m-2]
+heat_flux_simstrat(U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(U10, Tw, Ta) + He_simstrat(U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(Ta, cloud_cover, vapour_pressure)+Hw_simstrat(Tw)+cheat3*global_radiation
+
+@physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(f_wind*forcing.wind_speed.at(t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
