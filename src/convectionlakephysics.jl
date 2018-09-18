@@ -311,3 +311,22 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						end
 					end
 				end
+
+
+# Wind forcing
+##########################
+# Simstrat 1.6
+@physicsfn CD(p::ConvectionLakePhysics{<:DefaultPhysics}, U10) =	begin
+																		if U10 <= 0.1
+																			0.06215
+																		elseif U10 <= 3.85
+																			0.0044*U10^(-1.15)
+																		else #Polynomial approximation of Charnock's law
+																			-0.000000712*U10^2+0.00007387*U10+0.0006605
+																		end
+																	end
+@physicsfn τ(p::ConvectionLakePhysics{<:DefaultPhysics}, U10) = rho_air*CD(p, U10)*U10^2
+# wind shear (friction velocity)
+@physicsfn u_w(p::ConvectionLakePhysics{<:DefaultPhysics}, U10) = sqrt.(τ(p, U10)/rho)
+# thickness of diffusive boundary layer
+@physicsfn δv(p::ConvectionLakePhysics{<:DefaultPhysics}, U10) = c1*ν/u_w(p, U10)
