@@ -234,10 +234,11 @@ end
 #-----------
 const ai = [999.8395, 6.7914e-2, -9.0894e-3, 1.0171e-4, -1.2846e-6, 1.1592e-8, -5.0125e-11]
 const bi = [0.8181, -3.85e-3, 4.96e-5]
-const Tgrad = T-273.15
-const Ti = [Tgrad^i for i in 0:6]
 
-ρ(T::Float64,S::Float64) = dot(ai, Ti)+S*dot(bi, Ti[1:3])
+ρ(T::Float64,S::Float64) =	begin
+								Ti = [(T-273.15)^i for i in 0:6]
+								dot(ai, Ti)+S*dot(bi, Ti[1:3])
+							end
 
 @physicsfn ρ(p::ConvectionLakePhysics{<:DefaultPhysics}, depth) = ρ(temperature_profile.at(depth), salinity_profile.at(depth))
 
