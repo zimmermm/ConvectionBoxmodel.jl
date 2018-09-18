@@ -15,6 +15,7 @@ using Calculus: derivative
 using CSV
 using Dates
 
+# ConvectionBoxmodel
 export	@load_prototype,
 		call_prototype,
 		days_to_datetime,
@@ -27,25 +28,35 @@ export	interp1d,
 		top,
 		bottom
 
+# bathymetries
 export	surface_area,
 		volume_above,
 		total_volume,
 		area_at
 
+# growthmodels
 export	MOBGrowthModel,
 		Nogrowth,
 		MOBMonodModel,
 		mox,
 		μ
 
+# profileshapes
 export	FermiProfile,
 		GompertzProfile,
 		StepProfile,
 		DataProfile
 
+# callbacks
 export	fully_mixed,
 		mixed_to
 
+# core
+export	LakeModel,
+		boxmodel_ode,
+		solve_boxmodel,
+		solve_boxmodel_montecarlo,
+		boxmodel_prob_func
 
 ######################
 # date conversion
@@ -109,7 +120,7 @@ bottom(i::Interpolation{<:Any}) = i.x[end]
 #precompile(trapz, (Array{Float64,1}, Array{Float64,1}))
 
 
-#include("core.jl")
+include("core.jl")
 include("bathymetries.jl")
 #include("lakephysics.jl")
 include("convectionlakephysics.jl")

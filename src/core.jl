@@ -7,53 +7,22 @@ I do not follow Julias intended code style and use structures as kind of objects
 In future versions I might change this.. 
 =============================================#
 
-#===================================
-Bathymetry
-===================================#
-
-# Interface describing a continuous bathymetry
-struct ContinuousBathymetryInterface
-	# quick access properties
-	surface_area::Float64
-	total_volume::Float64
-	depth::Float64
-	# functions
-	area::Function
-	volume_above::Function
-end
-
-#===================================
-Growth Model
-===================================#
-mutable struct MOBGrowthModel
-	mutate::Function
-	montecarlo_shuffle::Function
-	mean_growth_term::Function
-	growth_term::Function
-end
 
 #===================================
 Lake Model
 ===================================#
 
 # Interface to user defined functions of the model
-struct LakeModelInterface
-	bathymetry::ContinuousBathymetryInterface
+struct LakeModel
+	bathymetry::Interpolation{<:Any}
 
 	initial_condition::Array{Float64,1}
 
 	# static profiles
-	lake_temperature::Function
-	concentration_profile::Function
+	lake_temperature::Interpolation{<:Any}
+	concentration_profile::Interpolation{<:Any}
 
-	# thickening rate of mixed layer
-	dhdt::Function
-	# heat flux
-	dHdt::Function
-	# atmospheric exchange
-	Fatm::Function
-	# Diffusive flux from hypolimnion
-	F_diff::Function
+	lake_physics::LakePhysics
 
 	growth_model::MOBGrowthModel
 
@@ -63,20 +32,6 @@ struct LakeModelInterface
 end
 
 
-######################
-# date conversion
-######################
-function datetime_to_days(datetime::DateTime)
-	(datetime-DateTime(1970)).value/1e3/3600/24.
-end
-precompile(datetime_to_days, (DateTime,))
-
-function days_to_datetime(days)
-	DateTime(1970)+Dates.Day(days)
-end
-precompile(days_to_datetime, (Float64,))
-precompile(days_to_datetime, (Int64,))
-
 #===================================
 Boxmodel
 ===================================#
@@ -85,11 +40,11 @@ function boxmodel_ode(du,u,lakemodel,t)
 	h_mix, V, C, B, T, Qatm, Qmix, Qmox, Qdiff = u
 
 	# include morphology to support non-equidistant time steps
-	du[1] = lakemodel.dhdt(u, t)*3600*24
-	du[2] = du[1]*lakemodel.bathymetry.area(h_mix)
+	du[1] = dhdt(lakemodel.lakephysics, u, t)*3600*24
+	du[2] = du[1]*lakemodel.bathymetry.at(h_mix)
 
 	# Flux to the atmosphere
-	du[6] = -lakemodel.Fatm(u,t)*lakemodel.bathymetry.surface_area*3600*24
+	du[6] = -Fatm(lakemodel.lakephysics, u, t)*surface_area(lakemodel.bathymetry)*3600*24
 	# Flux from hypolimnion into mixed layer
 	du[7] = du[2]*lakemodel.concentration_profile(h_mix)+lakemodel.F_diff(u,t)*lakemodel.bathymetry.area(h_mix)*3600*24
 	# MOX
@@ -106,20 +61,19 @@ function boxmodel_ode(du,u,lakemodel,t)
 	du[8] = du[8]*V
 	return
 end
-precompile(boxmodel_ode, (Array{Float64,1}, Array{Float64,1}, LakeModelInterface, Float64))
+precompile(boxmodel_ode, (Array{Float64,1}, Array{Float64,1}, LakeModel, Float64))
 
-# solver
+
+#===================================
+Solver
+===================================#
+
 function solve_boxmodel(lakemodel)
 	# assemble initial conditions
 	h_mix0, C0, B0, T0 = lakemodel.initial_condition
-	V0 = lakemodel.bathymetry.volume_above(h_mix0)
-	# diagnostic variables
-	Qatm0 = 0.
-	Qmix0 = 0.
-	Qmox0 = 0.
-	H0 = 0.
-	Qdiff0 = 0.
-	u0 = [h_mix0, V0, C0, B0, T0, Qatm0, Qmix0, Qatm0, Qdiff0]
+	V0 = volume_above(lakemodel.bathymetry, h_mix0)
+	# state variables
+	u0 = [h_mix0, V0, C0, B0, T0, 0.0, 0.0, 0.0, 0.0]
 
 	# tspan
 	tspan = (lakemodel.starttime,lakemodel.endtime)
@@ -130,19 +84,15 @@ function solve_boxmodel(lakemodel)
 	# solve
 	@time solve(prob, Rosenbrock23(autodiff=false), reltol=1e-2, abstol=1e-2, dtmax=1./24.)
 end
-precompile(solve_boxmodel, (LakeModelInterface,))
+precompile(solve_boxmodel, (LakeModel,))
+
 
 function solve_boxmodel_montecarlo(lakemodel, num_monte)
 	# assemble initial conditions
 	h_mix0, C0, B0, T0 = lakemodel.initial_condition
-	V0 = lakemodel.bathymetry.volume_above(h_mix0)
-	# diagnostic variables
-	Qatm0 = 0.
-	Qmix0 = 0.
-	Qmox0 = 0.
-	H0 = 0.
-	Qdiff0 = 0.
-	u0 = [h_mix0, V0, C0, B0, T0, Qatm0, Qmix0, Qatm0, Qdiff0]
+	V0 = volume_above(lakemodel.bathymetry, h_mix0)
+	# state variables
+	u0 = [h_mix0, V0, C0, B0, T0, 0.0, 0.0, 0.0, 0.0]
 
 	# tspan
 	tspan = (lakemodel.starttime,lakemodel.endtime)
@@ -158,23 +108,18 @@ function solve_boxmodel_montecarlo(lakemodel, num_monte)
 	# solve
 	@time solve(montecarlo, Rosenbrock23(autodiff=false), reltol=1e-2, abstol=1e-2, dtmax=1./24., num_monte=num_monte, parallel_type=:none)
 end
-precompile(solve_boxmodel_montecarlo, (LakeModelInterface,))
+precompile(solve_boxmodel_montecarlo, (LakeModel,))
 
 
 function boxmodel_prob_func(prob, i, repeat)
 	p = prob.p
-	growth_model = p.growth_model
-	growth_model.growth_term = growth_model.montecarlo_shuffle()
-	lakemodel = LakeModelInterface(
+	lakemodel = LakeModel(
 								p.bathymetry,						# bathymetry
 								p.initial_condition,						# initial_conditions
 								p.lake_temperature,						# temperature profile
 								p.concentration_profile,						# concentration profile
-								p.dhdt,						# dhdt
-								p.dHdt,								# dHdt
-								p.Fatm, #Disable(), #FirstOrderRate(-10.1, 3),				# Fatm
-								p.F_diff,
-								growth_model,
+								p.lake_physics,
+								montecarlo_shuffle(p.growth_model),
 								p.starttime,
 								p.endtime,
 								p.model_callback
