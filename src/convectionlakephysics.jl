@@ -73,7 +73,7 @@ precompile(inflow_from_dataset, (String,))
 LakePhysics
 ===================================#
 # traits
-abstract type DefautPhysics end
+abstract type DefaultPhysics end
 
 # lake physics
 abstract type LakePhysics end
@@ -244,7 +244,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 
 # water column stability
 #--------------------------
-@physicsfn N2(p::ConvectionLakePhysics{<:DefaultPhysics},depth::Float64,Tmix::Float64) =	begin
+@physicsfn N2(p::ConvectionLakePhysics{<:DefaultPhysics}, depth::Float64, Tmix::Float64) =	begin
 																								ρmix = density(Tmix, 0.1)  # density in mixed layer. assumption that salinity in mixed layer is constantly 0.1 PSU
 																								ρhypo = density(p, depth)  # density of hypolimnion at mixed layer depth
 																								ρav = (ρmix+ρhypo)/2  # average density
