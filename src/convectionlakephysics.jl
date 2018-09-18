@@ -2,7 +2,7 @@
 Forcing Data
 ===================================#
 
-struct MeorologicalForcing
+struct MeteorologicalForcing
 	air_temperature::Interpolation
 	cloud_cover::Interpolation
 	vapour_pressure::Interpolation
@@ -224,6 +224,11 @@ end
 ########################
 # lake physics functions
 ########################
+# toplevel functions used by the solver
+# dhdt(u,t)
+# dTdt(u,t)
+# Fatm(u,t)
+# F_diff(u,t)
 
 # density
 #-----------
