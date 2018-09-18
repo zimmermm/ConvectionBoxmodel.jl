@@ -263,9 +263,9 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # emissivity
 @physicsfn Ea(p::ConvectionLakePhysics{<:DefaultPhysics}, Ta, cloud_cover, vapour_pressure) = (1.0+0.17*cloud_cover^2)*1.24*(vapour_pressure/Ta)^(1.0/7.0)
 # atmospheric longwave radiation
-@physicsfn Ha_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, Ta, cloud_cover, vapour_pressure, σ) = (1.0-A_L)*Ea(p,Ta, cloud_cover, vapour_pressure)*σ*Ta^4
+@physicsfn Ha_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, Ta, cloud_cover, vapour_pressure) = (1.0-A_L)*Ea(p,Ta, cloud_cover, vapour_pressure)*σ*Ta^4
 # water longwave radiation
-@physicsfn Hw_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, Tw, σ) = -0.972*σ*Tw^4
+@physicsfn Hw_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, Tw) = -0.972*σ*Tw^4
 #*** Shortwave
 # is given by forcing.global_radiation(t) (already corrected for albedo)
 #*** evaporation & condensation
@@ -278,7 +278,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 @physicsfn Hfl(p::ConvectionLakePhysics{<:DefaultPhysics}, Ta,Tw,flow,temp,surface_area) = rho*Cp*flow/surface_area*(temp-Tw)
 
 # total heat balance [W m-2]
-@physicsfn heat_flux_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(U10, Tw, Ta) + He_simstrat(U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(Ta, cloud_cover, vapour_pressure)+Hw_simstrat(Tw)+cheat3*global_radiation
+@physicsfn heat_flux_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(p, U10, Tw, Ta) + He_simstrat(p, U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(p, Ta, cloud_cover, vapour_pressure)+Hw_simstrat(p, Tw)+cheat3*global_radiation
 
 @physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(p, f_wind*forcing.wind_speed.at(t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
 
