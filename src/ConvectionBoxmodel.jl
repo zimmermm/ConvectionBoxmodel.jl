@@ -51,6 +51,11 @@ export	FermiProfile,
 export	fully_mixed,
 		mixed_to
 
+# convectionlakephysics
+export	LakePhysics,
+		DefaultPhysics,
+		ConvectionLakePhysics
+
 # core
 export	LakeModel,
 		boxmodel_ode,
@@ -120,12 +125,11 @@ bottom(i::Interpolation{<:Any}) = i.x[end]
 #precompile(trapz, (Array{Float64,1}, Array{Float64,1}))
 
 
-include("core.jl")
-include("bathymetries.jl")
-#include("lakephysics.jl")
-include("convectionlakephysics.jl")
 include("profileshapes.jl")
-include("growthmodels.jl")
 include("callbacks.jl")
+include("bathymetries.jl")
+include("convectionlakephysics.jl")
+include("growthmodels.jl")
+include("core.jl")
 
 end # module
