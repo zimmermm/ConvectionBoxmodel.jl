@@ -16,7 +16,9 @@ using CSV
 using Dates
 
 export	@load_prototype,
-		call_prototype
+		call_prototype,
+		days_to_datetime,
+		datetime_to_days
 
 export	interp1d,
 		interp1d!,
@@ -44,6 +46,20 @@ export	FermiProfile,
 export	fully_mixed,
 		mixed_to
 
+
+######################
+# date conversion
+######################
+function datetime_to_days(datetime::Dates.DateTime)
+	(datetime-Dates.DateTime(1970)).value/1e3/3600/24.
+end
+precompile(datetime_to_days, (Dates.DateTime,))
+
+function days_to_datetime(days)
+	Dates.DateTime(1970)+Dates.Day(days)
+end
+precompile(days_to_datetime, (Float64,))
+precompile(days_to_datetime, (Int64,))
 
 ####################################
 # Prototyping
