@@ -281,3 +281,5 @@ Hfl(Ta,Tw,flow,temp,surface_area) = rho*Cp*flow/surface_area*(temp-Tw)
 heat_flux_simstrat(U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(U10, Tw, Ta) + He_simstrat(U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(Ta, cloud_cover, vapour_pressure)+Hw_simstrat(Tw)+cheat3*global_radiation
 
 @physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(f_wind*forcing.wind_speed.at(t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
+
+@physicsfn dTdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = heat_flux(p, u,t)/(rho*Cp)
