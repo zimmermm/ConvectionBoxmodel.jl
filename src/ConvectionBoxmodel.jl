@@ -27,7 +27,8 @@ export	interp1d,
 
 export	surface_area,
 		volume_above,
-		total_volume
+		total_volume,
+		area_at
 
 export	MOBGrowthModel,
 		Nogrowth,
