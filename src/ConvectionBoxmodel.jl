@@ -54,7 +54,9 @@ export	fully_mixed,
 # convectionlakephysics
 export	LakePhysics,
 		DefaultPhysics,
-		ConvectionLakePhysics
+		ConvectionLakePhysics,
+		MeteorologicalForcing,
+		Inflow
 
 # core
 export	LakeModel,

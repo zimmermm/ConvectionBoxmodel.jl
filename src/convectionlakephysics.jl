@@ -1,3 +1,77 @@
+#===================================
+Forcing Data
+===================================#
+
+struct MeorologicalForcing
+	air_temperature::Interpolation
+	cloud_cover::Interpolation
+	vapour_pressure::Interpolation
+	global_radiation::Interpolation
+	wind_speed::Interpolation
+end
+
+function forcing_from_dataset(path)
+	# load simstrat forcing dataset
+	forcing_df = CSV.read(path, delim="\t")
+
+	##########################################
+	# interpolators for individual data series
+	##########################################
+	timestamps = forcing_df[:t]
+	air_temperature = LinearInterpolation(timestamps, forcing_df[Symbol("Tair (°C)")]+273.15)
+	cloud_cover = LinearInterpolation(timestamps, forcing_df[Symbol("cloud coverage")])
+	vapour_pressure = LinearInterpolation(timestamps, forcing_df[Symbol("vap (mbar)")])
+
+	# wind speed
+	u10 = forcing_df[Symbol("u (m/s)")]
+	v10 = forcing_df[Symbol("v (m/s)")]
+	wind_speed = LinearInterpolation(timestamps, sqrt.(u10.^2+v10.^2))
+
+	# global shortwave irradiation
+	G = forcing_df[Symbol("Fsol (W/m2)")]
+	C = forcing_df[Symbol("cloud coverage")]
+
+	## Wuest et al.
+	#Fdir = (1.-C)./((1.-C)+0.5*C)
+	#Fdiff = (0.5*C)./((1.-C)+0.5*C)
+	#Alb_dir = 0.2
+	#Alb_diff = 0.066
+	#Hs = G.*Fdir*(1-Alb_dir)+G.*Fdiff*(1-Alb_diff)
+
+	## Simstrat
+	Hs = (1-0.08)*G
+	global_radiation = LinearInterpolation(timestamps, Hs)
+
+	MeteorologicalForcing(air_temperature, cloud_cover, vapour_pressure, global_radiation, wind_speed)
+end
+precompile(forcing_from_dataset, (String,))
+
+#===================================
+Inflow
+===================================#
+struct Inflow
+	flow::Interpolation
+	temperature::Interpolation
+end
+
+function inflow_from_dataset(path)
+	# load simstrat forcing dataset
+	inflow_df = CSV.read(path, delim=",")
+
+	##########################################
+	# interpolators for individual data series
+	##########################################
+	timestamps = inflow_df[:Timestamp]
+	flow = LinearInterpolation(timestamps, inflow_df[:Flow])
+	temperature = LinearInterpolation(timestamps, inflow_df[:Temp]+273.15)
+
+	Inflow(flow, temperature)
+end
+precompile(inflow_from_dataset, (String,))
+
+#===================================
+LakePhysics
+===================================#
 # traits
 abstract type DefautPhysics end
 
