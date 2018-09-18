@@ -40,23 +40,23 @@ function boxmodel_ode(du,u,lakemodel,t)
 	h_mix, V, C, B, T, Qatm, Qmix, Qmox, Qdiff = u
 
 	# include morphology to support non-equidistant time steps
-	du[1] = dhdt(lakemodel.lakephysics, u, t)*3600*24
-	du[2] = du[1]*lakemodel.bathymetry.at(h_mix)
+	du[1] = dhdt(lakemodel.lake_physics, u, t)*3600*24
+	du[2] = du[1]*lakemodel.bathymetry.at(hmix)
 
 	# Flux to the atmosphere
-	du[6] = -Fatm(lakemodel.lakephysics, u, t)*surface_area(lakemodel.bathymetry)*3600*24
+	du[6] = -Fatm(lakemodel.lake_physics, u, t)*surface_area(lakemodel.bathymetry)*3600*24
 	# Flux from hypolimnion into mixed layer
-	du[7] = du[2]*lakemodel.concentration_profile(h_mix)+lakemodel.F_diff(u,t)*lakemodel.bathymetry.area(h_mix)*3600*24
+	du[7] = du[2]*lakemodel.concentration_profile.at(h_mix)+F_diff(lakemodel.lake_physics, u,t)*lakemodel.bathymetry.at(h_mix)*3600*24
 	# MOX
 	du[8] = 0
-	du[9] = lakemodel.F_diff(u,t)*lakemodel.bathymetry.area(h_mix)*3600*24
+	du[9] = F_diff(lakemodel.lake_physics, u,t)*lakemodel.bathymetry.at(h_mix)*3600*24
 
 	# basic ODE for expanding box size
 	du[3] = 1/V*(du[7]-du[2]*C-du[6])
 	du[4] = -1/V*du[2]*B
-	du[5] = 1/V*du[2]*(lakemodel.lake_temperature(h_mix)-T)+1/V*lakemodel.dHdt(u,t)*lakemodel.bathymetry.surface_area*3600*24
+	du[5] = 1/V*du[2]*(lakemodel.lake_temperature.at(h_mix)-T)+1/V*dHdt(lakemodel.lakephysics, u,t)*surface_area(lakemodel.bathymetry)*3600*24
 
-	mu = lakemodel.growth_model.growth_term(u, t)*3600*24*B
+	mu = [0, 0, -mox(lakemodel.growth_model), μ(lakemodel.growth_model), 0, 0, 0, mox(lakemodel.growth_model)]*3600*24*B
 	du[:] = du+mu
 	du[8] = du[8]*V
 	return
