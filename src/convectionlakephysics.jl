@@ -283,3 +283,31 @@ heat_flux_simstrat(U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) 
 @physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(f_wind*forcing.wind_speed.at(t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
 
 @physicsfn dTdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = heat_flux(p, u,t)/(rho*Cp)
+
+# Buoyancy foring: Convective thickening of the mixed layer
+##########################################
+# Buoyancy Flux [m2 s-3]
+@physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:Default}, u,t) = -β*dTdt(p, u,t)
+# thickening rate
+# Zilitinkevich 1991
+@physicsfn dhdt(p::ConvectionLakePhysics{<:Default}, u, t) = begin
+					# no thermocline deepening when the bottom of the lake is reached
+					# should be given as parameter in future versions!!
+					if u[1] > 16
+						return 0.0
+					end
+					B0 = buoyancy_flux(p,u,t)
+					# no thermocline erosion during warming
+					# no thermocline erosion if mixed layer is warmer than hypolimnion
+					if B0<0 | (u[5]>temperature_profile.at(u[1]))
+						return 0.0
+					else
+						v=(1+2*A)*B0/(N2_ρ(u[1], u[5])*u[1])
+						# don't allow rising of the thermocline
+						if v < 0.0
+							return 0.0
+						else
+							return v
+						end
+					end
+				end
