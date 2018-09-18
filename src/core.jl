@@ -40,23 +40,23 @@ function boxmodel_ode(du,u,lakemodel,t)
 	h_mix, V, C, B, T, Qatm, Qmix, Qmox, Qdiff = u
 
 	# include morphology to support non-equidistant time steps
-	du[1] = dhdt(lakemodel.lake_physics, u, t)*3600*24
+	du[1] = dhdt(lakemodel.lake_physics, u, t)*3600.0*24.0
 	du[2] = du[1]*lakemodel.bathymetry.at(hmix)
 
 	# Flux to the atmosphere
-	du[6] = -Fatm(lakemodel.lake_physics, u, t)*surface_area(lakemodel.bathymetry)*3600*24
+	du[6] = -Fatm(lakemodel.lake_physics, u, t)*surface_area(lakemodel.bathymetry)*3600.0*24.0
 	# Flux from hypolimnion into mixed layer
-	du[7] = du[2]*lakemodel.concentration_profile.at(h_mix)+F_diff(lakemodel.lake_physics, u,t)*lakemodel.bathymetry.at(h_mix)*3600*24
+	du[7] = du[2]*lakemodel.concentration_profile.at(h_mix)+F_diff(lakemodel.lake_physics, u,t)*lakemodel.bathymetry.at(h_mix)*3600.0*24.0
 	# MOX
-	du[8] = 0
-	du[9] = F_diff(lakemodel.lake_physics, u,t)*lakemodel.bathymetry.at(h_mix)*3600*24
+	du[8] = 0.0
+	du[9] = F_diff(lakemodel.lake_physics, u,t)*lakemodel.bathymetry.at(h_mix)*3600.0*24.0
 
 	# basic ODE for expanding box size
-	du[3] = 1/V*(du[7]-du[2]*C-du[6])
-	du[4] = -1/V*du[2]*B
-	du[5] = 1/V*du[2]*(lakemodel.lake_temperature.at(h_mix)-T)+1/V*dHdt(lakemodel.lakephysics, u,t)*surface_area(lakemodel.bathymetry)*3600*24
+	du[3] = 1.0/V*(du[7]-du[2]*C-du[6])
+	du[4] = -1.0/V*du[2]*B
+	du[5] = 1.0/V*du[2]*(lakemodel.lake_temperature.at(h_mix)-T)+1.0/V*dHdt(lakemodel.lakephysics, u,t)*surface_area(lakemodel.bathymetry)*3600.0*24.0
 
-	mu = [0, 0, -mox(lakemodel.growth_model), μ(lakemodel.growth_model), 0, 0, 0, mox(lakemodel.growth_model)]*3600*24*B
+	mu = [0.0, 0.0, -mox(lakemodel.growth_model), μ(lakemodel.growth_model), 0.0, 0.0, 0.0, mox(lakemodel.growth_model)]*3600.0*24.0*B
 	du[:] = du+mu
 	du[8] = du[8]*V
 	return
@@ -82,7 +82,7 @@ function solve_boxmodel(lakemodel)
 	prob = ODEProblem(boxmodel_ode,u0,tspan,lakemodel,callback=lakemodel.model_callback)
 
 	# solve
-	@time solve(prob, Rosenbrock23(autodiff=false), reltol=1e-2, abstol=1e-2, dtmax=1./24.)
+	@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0)
 end
 precompile(solve_boxmodel, (LakeModel,))
 
@@ -106,7 +106,7 @@ function solve_boxmodel_montecarlo(lakemodel, num_monte)
 									#u_init = u0
 								)
 	# solve
-	@time solve(montecarlo, Rosenbrock23(autodiff=false), reltol=1e-2, abstol=1e-2, dtmax=1./24., num_monte=num_monte, parallel_type=:none)
+	@time solve(montecarlo, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0, num_monte=num_monte, parallel_type=:none)
 end
 precompile(solve_boxmodel_montecarlo, (LakeModel,))
 
@@ -125,12 +125,12 @@ function boxmodel_prob_func(prob, i, repeat)
 								p.model_callback
 							)
 	u0 = [
-			(1.0+randn()/13)*prob.u0[1],  # hmix0
+			(1.0+randn()/13.0)*prob.u0[1],  # hmix0
 			prob.p.bathymetry.volume_above(prob.u0[1]),  # V0
-			(1.0+randn()/7)*prob.u0[3],  # C0
-			(1.0+randn()/8)*prob.u0[4],  # B0
-			(1.0+randn()/244)*prob.u0[5],  # T0
-			0, 0, 0, 0
+			(1.0+randn()/7.0)*prob.u0[3],  # C0
+			(1.0+randn()/8.0)*prob.u0[4],  # B0
+			(1.0+randn()/244.0)*prob.u0[5],  # T0
+			0.0, 0.0, 0.0, 0.0
 		]
 	ODEProblem(prob.f, u0, prob.tspan, lakemodel, callback=prob.callback)
 end
