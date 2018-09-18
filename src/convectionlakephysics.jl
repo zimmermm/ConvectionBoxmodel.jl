@@ -261,26 +261,26 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # negative flux: cooling
 #*** Longwave
 # emissivity
-Ea(Ta, cloud_cover, vapour_pressure) = (1.0+0.17*cloud_cover^2)*1.24*(vapour_pressure/Ta)^(1.0/7.0)
+@physicsfn Ea(p::ConvectionLakePhysics{<:DefaultPhysics}, Ta, cloud_cover, vapour_pressure) = (1.0+0.17*cloud_cover^2)*1.24*(vapour_pressure/Ta)^(1.0/7.0)
 # atmospheric longwave radiation
-Ha_simstrat(Ta, cloud_cover, vapour_pressure, σ) = (1.0-A_L)*Ea(Ta, cloud_cover, vapour_pressure)*σ*Ta^4
+@physicsfn Ha_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, Ta, cloud_cover, vapour_pressure, σ) = (1.0-A_L)*Ea(p,Ta, cloud_cover, vapour_pressure)*σ*Ta^4
 # water longwave radiation
-Hw_simstrat(Tw, σ) = -0.972*σ*Tw^4
+@physicsfn Hw_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, Tw, σ) = -0.972*σ*Tw^4
 #*** Shortwave
 # is given by forcing.global_radiation(t) (already corrected for albedo)
 #*** evaporation & condensation
-fu_simstrat(U10, Tw, Ta) = 4.4+1.82*U10^2+0.26*(Tw-Ta)
-e_s_simstrat(Tw, Ta)=6.107*10^(7.5*(Tw-273.15)/(237.3+(Tw-273.15)))
-He_simstrat(U10, Tw, Ta, vapour_pressure) = -fu_simstrat(U10, Tw, Ta)*(e_s_simstrat(Tw, Ta)-vapour_pressure)
+@physicsfn fu_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta) = 4.4+1.82*U10^2+0.26*(Tw-Ta)
+@physicsfn e_s_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, Tw, Ta)=6.107*10^(7.5*(Tw-273.15)/(237.3+(Tw-273.15)))
+@physicsfn He_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, vapour_pressure) = -fu_simstrat(p, U10, Tw, Ta)*(e_s_simstrat(p, Tw, Ta)-vapour_pressure)
 #*** sensible heat
-Hc_simstrat(U10, Tw, Ta) = -B*fu_simstrat(U10, Tw, Ta)*(Tw-Ta)
+@physicsfn Hc_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta) = -B*fu_simstrat(p, U10, Tw, Ta)*(Tw-Ta)
 #*** inflow/outflow
-Hfl(Ta,Tw,flow,temp,surface_area) = rho*Cp*flow/surface_area*(temp-Tw)
+@physicsfn Hfl(p::ConvectionLakePhysics{<:DefaultPhysics}, Ta,Tw,flow,temp,surface_area) = rho*Cp*flow/surface_area*(temp-Tw)
 
 # total heat balance [W m-2]
-heat_flux_simstrat(U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(U10, Tw, Ta) + He_simstrat(U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(Ta, cloud_cover, vapour_pressure)+Hw_simstrat(Tw)+cheat3*global_radiation
+@physicsfn heat_flux_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(U10, Tw, Ta) + He_simstrat(U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(Ta, cloud_cover, vapour_pressure)+Hw_simstrat(Tw)+cheat3*global_radiation
 
-@physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(f_wind*forcing.wind_speed.at(t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
+@physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(p, f_wind*forcing.wind_speed.at(t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
 
 @physicsfn dTdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = heat_flux(p, u,t)/(rho*Cp)
 
@@ -290,24 +290,24 @@ heat_flux_simstrat(U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) 
 @physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:Default}, u,t) = -β*dTdt(p, u,t)
 # thickening rate
 # Zilitinkevich 1991
-@physicsfn dhdt(p::ConvectionLakePhysics{<:Default}, u, t) = begin
-					# no thermocline deepening when the bottom of the lake is reached
-					# should be given as parameter in future versions!!
-					if u[1] > 16
-						return 0.0
-					end
-					B0 = buoyancy_flux(p,u,t)
-					# no thermocline erosion during warming
-					# no thermocline erosion if mixed layer is warmer than hypolimnion
-					if B0<0 | (u[5]>temperature_profile.at(u[1]))
-						return 0.0
-					else
-						v=(1+2*A)*B0/(N2_ρ(u[1], u[5])*u[1])
-						# don't allow rising of the thermocline
-						if v < 0.0
-							return 0.0
-						else
-							return v
-						end
-					end
-				end
+#@physicsfn dhdt(p::ConvectionLakePhysics{<:Default}, u, t) = begin
+#					# no thermocline deepening when the bottom of the lake is reached
+#					# should be given as parameter in future versions!!
+#					if u[1] > 16
+#						return 0.0
+#					end
+#					B0 = buoyancy_flux(p,u,t)
+#					# no thermocline erosion during warming
+#					# no thermocline erosion if mixed layer is warmer than hypolimnion
+#					if B0<0 | (u[5]>temperature_profile.at(u[1]))
+#						return 0.0
+#					else
+#						v=(1+2*A)*B0/(N2_ρ(u[1], u[5])*u[1])
+#						# don't allow rising of the thermocline
+#						if v < 0.0
+#							return 0.0
+#						else
+#							return v
+#						end
+#					end
+#				end
