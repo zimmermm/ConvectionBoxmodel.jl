@@ -348,3 +348,24 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						end
 
 @physicsfn ϵ(p::ConvectionLakePhysics,u,t) = ϵ_u(p,u,t)+ϵ_B(p,u,t)
+
+# Air/Water transfer velocity
+#############################
+
+# Schmitt-Number
+Sc_ch4_Wanninkhof(T) = 1909.4 - 120.78*(T-273.15) + 4.1555*((T-273.15)^2) - 0.080578*((T-273.15)^3) + 0.00065777*((T-273.15)^4)
+Ceq_ch4(T,S) = exp(-68.8862 + 101.4956*(100/T) + 28.7314*log(T/100) + S*(-0.076146 + 0.043970*(T/100) - 0.006872*(T/100)^2))*(p0/(R*T0))*1.8e-6
+# Gas Transfer Velocity
+k_ch4°(ϵ) = (p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) -> η*(ϵ(p,u,t)*ν)^0.25*Sc_ch4_Wanninkhof(u[5])^(-0.5)
+k = k_ch4°(ϵ)
+k_u = k_ch4°(ϵ_u)
+k_B = k_ch4°(ϵ_B)
+Fatm°(k) = (p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) -> -k(p,u,t)*(u[3]-Ceq_ch4(u[5],0)*1e6)
+Fatm = Fatm°(k)
+Fatm_u = Fatm°(k_u)
+Fatm_B = Fatm°(k_B)
+
+# Wind penetration depth: deprecated!
+#########################################
+# Monin-Obukhov length scale (Tedford 2014)
+AML(p::ConvectionLakePhysics{<:DefaultPhysics},u,t) = δv(p,f_wind*forcing.wind_speed.at(t))
