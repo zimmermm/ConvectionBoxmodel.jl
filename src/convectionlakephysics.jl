@@ -247,8 +247,8 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # water column stability
 #--------------------------
 @physicsfn N2(p::ConvectionLakePhysics{<:DefaultPhysics}, depth::Float64, Tmix::Float64) =	begin
-																								ρmix = density(Tmix, 0.1)  # density in mixed layer. assumption that salinity in mixed layer is constantly 0.1 PSU
-																								ρhypo = density(p, depth)  # density of hypolimnion at mixed layer depth
+																								ρmix = ρ(Tmix, 0.1)  # density in mixed layer. assumption that salinity in mixed layer is constantly 0.1 PSU
+																								ρhypo = ρ(p, depth)  # density of hypolimnion at mixed layer depth
 																								ρav = (ρmix+ρhypo)/2  # average density
 																								dρdz = (ρhypo-ρmix)/0.1  # density gradient. assumption that gradient is 0.1m thick
 																								g/ρhypo*dρdz  # Brunt-Väisälä frequency
