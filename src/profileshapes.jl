@@ -16,7 +16,7 @@ function StepProfile(Qtop, Qbottom, z_bottom, z_interface, sharpness)
 end
 
 function DataProfile(path)
-	profile_data = CSV.read(path, types=[Array{Float64}, Array{Float64}])
+	profile_data = CSV.read(path, types=[Array{Float64,1}, Array{Float64,1}])
 	LinearInterpolation(profile_data[Symbol("Depth")], profile_data[Symbol("Value")])
 end
 precompile(DataProfile, (String,))
