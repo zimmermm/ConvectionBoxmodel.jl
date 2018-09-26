@@ -304,7 +304,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 					if B0<0 | (u[5]>temperature_profile.at(u[1]))
 						return 0.0
 					else
-						v=(1+2*A)*B0/(N2_ρ(u[1], u[5])*u[1])
+						v=(1+2*A)*B0/(N2(p, u[1], u[5])*u[1])
 						# don't allow rising of the thermocline
 						if v < 0.0
 							return 0.0
