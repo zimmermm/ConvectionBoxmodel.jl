@@ -58,13 +58,14 @@ end
 function inflow_from_dataset(path)
 	# load simstrat forcing dataset
 	inflow_df = CSV.read(path, delim=",")
+	inflow_df = disallowmissing!(inflow_df[completecases(inflow_df),:])
 
 	##########################################
 	# interpolators for individual data series
 	##########################################
 	timestamps = inflow_df[:Timestamp]
 	flow = LinearInterpolation(timestamps, inflow_df[:Flow])
-	temperature = LinearInterpolation(timestamps, inflow_df[:Temp]+273.15)
+	temperature = LinearInterpolation(timestamps, inflow_df[:Temp].+273.15)
 
 	Inflow(flow, temperature)
 end
