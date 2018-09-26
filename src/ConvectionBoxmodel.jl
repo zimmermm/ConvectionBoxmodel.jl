@@ -67,6 +67,7 @@ export	LakePhysics,
 		ϵ, ϵ_u, ϵ_B,
 		k, k_u, k_B,
 		Fatm, Fatm_u, Fatm_B,
+		F_diff
 		AML
 
 # core

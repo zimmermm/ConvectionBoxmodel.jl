@@ -367,6 +367,7 @@ Sc_ch4_Wanninkhof(T) = 1909.4 - 120.78*(T-273.15) + 4.1555*((T-273.15)^2) - 0.08
 @physicsfn Fatm_u(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = -k_u(p,u,t)*(u[3]-Ceq_ch4(p,u[5],0)*1e6)
 @physicsfn Fatm_B(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = -k_B(p,u,t)*(u[3]-Ceq_ch4(p,u[5],0)*1e6)
 
+@physicsfn F_diff(p::ConvectionLakePhysics{<:DefaultPhysics},u,t) = max(4e-8, 2.11e-8*u[1]-1.57e-7)/12*1e12/bathymetry.at(u[1])
 # Wind penetration depth: deprecated!
 #########################################
 # Monin-Obukhov length scale (Tedford 2014)
