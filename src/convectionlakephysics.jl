@@ -13,6 +13,7 @@ end
 function forcing_from_dataset(path)
 	# load simstrat forcing dataset
 	forcing_df = CSV.read(path, delim="\t")
+	forcing_df = disallowmissing!(forcing_df[completecases(forcing_df),:])
 
 	##########################################
 	# interpolators for individual data series
