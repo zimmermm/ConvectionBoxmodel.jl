@@ -18,7 +18,7 @@ function forcing_from_dataset(path)
 	# interpolators for individual data series
 	##########################################
 	timestamps = forcing_df[:t]
-	air_temperature = LinearInterpolation(timestamps, forcing_df[Symbol("Tair (°C)")]+273.15)
+	air_temperature = LinearInterpolation(timestamps, forcing_df[Symbol("Tair (°C)")].+273.15)
 	cloud_cover = LinearInterpolation(timestamps, forcing_df[Symbol("cloud coverage")])
 	vapour_pressure = LinearInterpolation(timestamps, forcing_df[Symbol("vap (mbar)")])
 
