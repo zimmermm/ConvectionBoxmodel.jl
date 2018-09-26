@@ -54,7 +54,7 @@ function boxmodel_ode(du,u,lakemodel,t)
 	# basic ODE for expanding box size
 	du[3] = 1.0/V*(du[7]-du[2]*C-du[6])
 	du[4] = -1.0/V*du[2]*B
-	du[5] = 1.0/V*du[2]*(lakemodel.lake_temperature.at(h_mix)-T)+1.0/V*dHdt(lakemodel.lakephysics, u,t)*surface_area(lakemodel.bathymetry)*3600.0*24.0
+	du[5] = 1.0/V*du[2]*(lakemodel.lake_temperature.at(h_mix)-T)+1.0/V*dTdt(lakemodel.lakephysics, u,t)*surface_area(lakemodel.bathymetry)*3600.0*24.0
 
 	mu = [0.0, 0.0, -mox(lakemodel.growth_model), μ(lakemodel.growth_model), 0.0, 0.0, 0.0, mox(lakemodel.growth_model)]*3600.0*24.0*B
 	du[:] = du+mu
