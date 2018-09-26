@@ -12,7 +12,7 @@ struct MOBMonodModel <: MOBGrowthModel
 end
 
 mox(model::MOBMonodModel, C::Float64) = model.Vmax*(C/(model.Km+C))
-μ(model::MOBMonodModel, C::Float64) = model.y*mox(model)
+μ(model::MOBMonodModel, C::Float64) = model.y*mox(model,C)
 
 mox(model::NoGrowth, C::Float64) = 0
 μ(model::NoGrowth, C::Float64) = 0
