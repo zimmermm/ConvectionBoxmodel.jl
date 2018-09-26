@@ -41,7 +41,7 @@ function boxmodel_ode(du,u,lakemodel,t)
 
 	# include morphology to support non-equidistant time steps
 	du[1] = dhdt(lakemodel.lake_physics, u, t)*3600.0*24.0
-	du[2] = du[1]*lakemodel.bathymetry.at(hmix)
+	du[2] = du[1]*lakemodel.bathymetry.at(h_mix)
 
 	# Flux to the atmosphere
 	du[6] = -Fatm(lakemodel.lake_physics, u, t)*surface_area(lakemodel.bathymetry)*3600.0*24.0
