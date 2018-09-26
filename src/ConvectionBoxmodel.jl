@@ -56,7 +56,18 @@ export	LakePhysics,
 		DefaultPhysics,
 		ConvectionLakePhysics,
 		MeteorologicalForcing,
-		Inflow
+		forcing_from_dataset,
+		Inflow,
+		inflow_from_dataset,
+		@physicsfn,
+		ρ,
+		N2,
+		dTdt,
+		dhdt,
+		ϵ, ϵ_u, ϵ_B,
+		k, k_u, k_B,
+		Fatm, Fatm_u, Fatm_B,
+		AML
 
 # core
 export	LakeModel,
