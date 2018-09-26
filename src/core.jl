@@ -56,7 +56,7 @@ function boxmodel_ode(du,u,lakemodel,t)
 	du[4] = -1.0/V*du[2]*B
 	du[5] = 1.0/V*du[2]*(lakemodel.lake_temperature.at(h_mix)-T)+1.0/V*dTdt(lakemodel.lake_physics, u,t)*surface_area(lakemodel.bathymetry)*3600.0*24.0
 
-	mu = [0.0, 0.0, -mox(lakemodel.growth_model, C), μ(lakemodel.growth_model, C), 0.0, 0.0, 0.0, mox(lakemodel.growth_model, C)]*3600.0*24.0*B
+	mu = [0.0, 0.0, -mox(lakemodel.growth_model, C), μ(lakemodel.growth_model, C), 0.0, 0.0, 0.0, mox(lakemodel.growth_model, C), 0.0]*3600.0*24.0*B
 	du[:] = du+mu
 	du[8] = du[8]*V
 	return
