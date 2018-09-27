@@ -68,7 +68,8 @@ export	LakePhysics,
 		k, k_u, k_B,
 		Fatm, Fatm_u, Fatm_B,
 		F_diff,
-		AML
+		AML,
+		buoyancy_flux
 
 # core
 export	LakeModel,
