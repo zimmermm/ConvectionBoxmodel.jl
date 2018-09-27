@@ -126,7 +126,7 @@ function boxmodel_prob_func(prob, i, repeat)
 							)
 	u0 = [
 			(1.0+randn()/13.0)*prob.u0[1],  # hmix0
-			prob.p.bathymetry.volume_above(prob.u0[1]),  # V0
+			volume_above(prob.p.bathymetry, prob.u0[1]),  # V0
 			(1.0+randn()/7.0)*prob.u0[3],  # C0
 			(1.0+randn()/8.0)*prob.u0[4],  # B0
 			(1.0+randn()/244.0)*prob.u0[5],  # T0
