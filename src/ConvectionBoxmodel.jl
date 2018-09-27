@@ -86,7 +86,7 @@ end
 precompile(datetime_to_days, (Dates.DateTime,))
 
 function days_to_datetime(days)
-	Dates.DateTime(1970)+Dates.Day(days)
+	Dates.DateTime(1970)+Dates.Nanosecond(floor(days*24*3600*1e9))
 end
 precompile(days_to_datetime, (Float64,))
 precompile(days_to_datetime, (Int64,))
