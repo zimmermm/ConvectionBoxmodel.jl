@@ -339,7 +339,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 
 # Read et al.
 @physicsfn ϵ_u(p::ConvectionLakePhysics,u,t,z)= u_w(p, f_wind*forcing.wind_speed.at(t))^3/(κ*z)
-@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t)= ϵ_z(p,u,t,AML(p,u,t))
+@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t)= ϵ_u(p,u,t,AML(p,u,t))
 @physicsfn ϵ_B(p::ConvectionLakePhysics, u,t)=	begin
 							B0 = buoyancy_flux(p,u,t)
 							if B0 < 0.0
