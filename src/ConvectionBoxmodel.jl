@@ -39,7 +39,9 @@ export	MOBGrowthModel,
 		Nogrowth,
 		MOBMonodModel,
 		mox,
-		μ
+		μ,
+		scale,
+		montecarlo_shuffle
 
 # profileshapes
 export	FermiProfile,
