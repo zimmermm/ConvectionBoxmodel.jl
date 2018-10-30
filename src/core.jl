@@ -79,10 +79,10 @@ function solve_boxmodel(lakemodel; saveat=[])
 	tspan = (lakemodel.starttime,lakemodel.endtime)
 
 	# ODEProblem
-	prob = ODEProblem(boxmodel_ode,u0,tspan,lakemodel,callback=lakemodel.model_callback,saveat=saveat)
+	prob = ODEProblem(boxmodel_ode,u0,tspan,lakemodel,callback=lakemodel.model_callback)
 
 	# solve
-	@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0)
+	@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0, saveat=saveat)
 end
 precompile(solve_boxmodel, (LakeModel,))
 
