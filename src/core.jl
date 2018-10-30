@@ -68,7 +68,7 @@ precompile(boxmodel_ode, (Array{Float64,1}, Array{Float64,1}, LakeModel, Float64
 Solver
 ===================================#
 
-function solve_boxmodel(lakemodel)
+function solve_boxmodel(lakemodel; saveat=[])
 	# assemble initial conditions
 	h_mix0, C0, B0, T0 = lakemodel.initial_condition
 	V0 = volume_above(lakemodel.bathymetry, h_mix0)
@@ -82,7 +82,11 @@ function solve_boxmodel(lakemodel)
 	prob = ODEProblem(boxmodel_ode,u0,tspan,lakemodel,callback=lakemodel.model_callback)
 
 	# solve
-	@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0)
+	if isempty(saveat)
+		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0)
+	else
+		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0, saveat=saveat)
+	end
 end
 #precompile(solve_boxmodel, (LakeModel,))
 
