@@ -84,7 +84,7 @@ function solve_boxmodel(lakemodel; saveat=[])
 	# solve
 	@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0, saveat=saveat)
 end
-precompile(solve_boxmodel, (LakeModel,))
+#precompile(solve_boxmodel, (LakeModel,))
 
 
 function solve_boxmodel_montecarlo(lakemodel, num_monte)
