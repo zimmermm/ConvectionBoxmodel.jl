@@ -63,6 +63,19 @@ function boxmodel_ode(du,u,lakemodel,t)
 end
 precompile(boxmodel_ode, (Array{Float64,1}, Array{Float64,1}, LakeModel, Float64))
 
+function createODEProblem(lakemodel; saveat=[])
+	# assemble initial conditions
+	h_mix0, C0, B0, T0 = lakemodel.initial_condition
+	V0 = volume_above(lakemodel.bathymetry, h_mix0)
+	# state variables
+	u0 = [h_mix0, V0, C0, B0, T0, 0.0, 0.0, 0.0, 0.0]
+
+	# tspan
+	tspan = (lakemodel.starttime,lakemodel.endtime)
+
+	# ODEProblem
+	ODEProblem(boxmodel_ode,u0,tspan,lakemodel,callback=lakemodel.model_callback)
+end
 
 #===================================
 Solver
