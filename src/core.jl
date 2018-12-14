@@ -63,7 +63,7 @@ function boxmodel_ode(du,u,lakemodel,t)
 end
 precompile(boxmodel_ode, (Array{Float64,1}, Array{Float64,1}, LakeModel, Float64))
 
-function createODEProblem(lakemodel; saveat=[])
+function createODEProblem(lakemodel)
 	# assemble initial conditions
 	h_mix0, C0, B0, T0 = lakemodel.initial_condition
 	V0 = volume_above(lakemodel.bathymetry, h_mix0)
