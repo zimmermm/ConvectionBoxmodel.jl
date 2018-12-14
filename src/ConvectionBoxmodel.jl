@@ -76,7 +76,6 @@ export	LakePhysics,
 # core
 export	LakeModel,
 		boxmodel_ode,
-		createODEProblem,
 		solve_boxmodel,
 		solve_boxmodel_montecarlo,
 		boxmodel_prob_func
