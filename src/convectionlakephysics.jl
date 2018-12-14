@@ -156,7 +156,7 @@ ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentrati
 		B = 0.62  # Bowen coefficient [mbar K-1]
 		c1 = 8.6
 
-		f_wind = 0.5
+		f_wind = 1.0#0.5
 
 		ConvectionLakePhysics{Traits}(
 			a_T,
