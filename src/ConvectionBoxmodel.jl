@@ -117,10 +117,10 @@ end
 interp1d(x::Array{T,1}, y::Array{T,1}) where T<:Number = begin
 							itp = interpolate((x,), y, Gridded(Linear()))
 							(at) -> begin
-								if at>max(x)
-									return itp(max(x))
-								elseif at<min(x)
-									return itp(min(x))
+								if at>maximum(x)
+									return itp(maximum(x))
+								elseif at<minimum(x)
+									return itp(minimum(x))
 								else
 									return itp(at)
 								end
