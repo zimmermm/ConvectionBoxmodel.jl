@@ -356,8 +356,8 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 
 @physicsfn ϵ(p::ConvectionLakePhysics,u,t) = begin
 	ϵ_uB = ϵ_u(p,u,t)+ϵ_B(p,u,t)
-	if ϵ_uB > 1e-6
-		return 1e-6
+	if ϵ_uB > 1e-7
+		return 1e-7
 	else
 		return ϵ_uB
 	end
