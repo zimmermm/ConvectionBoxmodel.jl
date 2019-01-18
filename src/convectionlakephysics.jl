@@ -299,6 +299,9 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						return 0.0
 					end
 					B0 = buoyancy_flux(p,u,t)
+					if B0 > 1e-6
+						BO=1e-6
+					end
 					#ϵ_h = ϵ_u(p, u, t, u[1])/0.6+2*ϵ_B(p,u,t)
 					# no thermocline erosion during warming
 					# no thermocline erosion if mixed layer is warmer than hypolimnion
@@ -351,15 +354,14 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 							end
 						end
 
-@physicsfn ϵ(p::ConvectionLakePhysics,u,t) = ϵ_u(p,u,t)+ϵ_B(p,u,t)
-#begin
-#	ϵ_uB = ϵ_u(p,u,t)+ϵ_B(p,u,t)
-#	if ϵ_uB > 1e-6
-#		return 1e-6
-#	else
-#		return ϵ_uB
-#	end
-#end
+@physicsfn ϵ(p::ConvectionLakePhysics,u,t) = begin
+	ϵ_uB = ϵ_u(p,u,t)+ϵ_B(p,u,t)
+	if ϵ_uB > 1e-6
+		return 1e-6
+	else
+		return ϵ_uB
+	end
+end
 
 # Air/Water transfer velocity
 #############################
