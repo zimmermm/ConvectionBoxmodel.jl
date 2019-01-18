@@ -116,7 +116,14 @@ end
 ####################################
 interp1d(x::Array{T,1}, y::Array{T,1}) where T<:Number = begin
 							itp = interpolate((x,), y, Gridded(Linear()))
-							(at) -> itp(at)
+							(at) -> begin
+								if at>max(x)
+									return itp(max(x))
+								elseif at<min(x)
+									return itp(min(x))
+								else
+									return itp(at)
+								end
 						end
 precompile(interp1d, (Array{Float64,1}, Array{Float64,1}))
 interp1d!(x,y) = interp1d(convert(Array{Float64}, x), convert(Array{Float64}, y)) 
