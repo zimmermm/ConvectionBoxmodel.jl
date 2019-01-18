@@ -354,15 +354,16 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 							end
 						end
 
-@physicsfn ϵ(p::ConvectionLakePhysics,u,t) = begin
-	return 1e-9
-	ϵ_uB = ϵ_u(p,u,t)+ϵ_B(p,u,t)
-	if ϵ_uB > 1e-7
-		return 1e-7
-	else
-		return ϵ_uB
-	end
-end
+@physicsfn ϵ(p::ConvectionLakePhysics,u,t) = ϵ_uB = ϵ_u(p,u,t)+ϵ_B(p,u,t)
+#begin
+#	return 1e-9
+#	ϵ_uB = ϵ_u(p,u,t)+ϵ_B(p,u,t)
+#	if ϵ_uB > 1e-7
+#		return 1e-7
+#	else
+#		return ϵ_uB
+#	end
+#end
 
 # Air/Water transfer velocity
 #############################

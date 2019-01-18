@@ -96,9 +96,9 @@ function solve_boxmodel(lakemodel; saveat=[])
 
 	# solve
 	if isempty(saveat)
-		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0)
+		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmin=1.0/24./60., dtmax=1.0/24.0/12.)
 	else
-		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0, saveat=saveat)
+		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmin=1.0/24./60., dtmax=1.0/24.0/12., saveat=saveat)
 	end
 end
 #precompile(solve_boxmodel, (LakeModel,))
