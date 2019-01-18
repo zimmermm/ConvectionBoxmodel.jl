@@ -96,12 +96,33 @@ function solve_boxmodel(lakemodel; saveat=[])
 
 	# solve
 	if isempty(saveat)
-		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0/60.0)
+		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-4, abstol=1.0e-2, dtmax=1.0/24.0/60.0)
 	else
-		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0/60.0, saveat=saveat)
+		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-4, abstol=1.0e-2, dtmax=1.0/24.0/60.0, saveat=saveat)
 	end
 end
 #precompile(solve_boxmodel, (LakeModel,))
+
+function solve_boxmodel_model(lakemodel; saveat=[])
+	# assemble initial conditions
+	h_mix0, C0, B0, T0 = lakemodel.initial_condition
+	V0 = volume_above(lakemodel.bathymetry, h_mix0)
+	# state variables
+	u0 = [h_mix0, V0, C0, B0, T0, 0.0, 0.0, 0.0, 0.0]
+
+	# tspan
+	tspan = (lakemodel.starttime,lakemodel.endtime)
+
+	# ODEProblem
+	prob = ODEProblem(boxmodel_ode,u0,tspan,lakemodel,callback=lakemodel.model_callback)
+
+	# solve
+	if isempty(saveat)
+		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0)
+	else
+		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0, saveat=saveat)
+	end
+end
 
 
 function solve_boxmodel_montecarlo(lakemodel, num_monte)
