@@ -156,7 +156,7 @@ ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentrati
 		B = 0.62  # Bowen coefficient [mbar K-1]
 		c1 = 8.6
 
-		f_wind = 0.5
+		f_wind = 0.6
 
 		ConvectionLakePhysics{Traits}(
 			a_T,
@@ -299,14 +299,14 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						return 0.0
 					end
 					B0 = buoyancy_flux(p,u,t)
-					#ϵ_h = ϵ_u(p, u, t, u[1])/0.6+2*ϵ_B(p,u,t)
+					ϵ_h = ϵ_u(p, u, t, u[1])/0.6+2*ϵ_B(p,u,t)
 					# no thermocline erosion during warming
 					# no thermocline erosion if mixed layer is warmer than hypolimnion
-					if B0<0 | (u[5]>temperature_profile.at(u[1]))
+					if ϵ_h<0 | (u[5]>temperature_profile.at(u[1]))
 						return 0.0
 					else
-						v=(1+2*A)*B0/(N2(p, u[1], u[5])*u[1])
-						#v=(1+2*A)*ϵ_h/(N2(p, u[1], u[5])*u[1])
+						#v=(1+2*A)*B0/(N2(p, u[1], u[5])*u[1])
+						v=(1+2*A)*ϵ_h/(N2(p, u[1], u[5])*u[1])
 						# don't allow rising of the thermocline
 						if v < 0.0
 							return 0.0
