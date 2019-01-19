@@ -157,13 +157,13 @@ function boxmodel_prob_func(prob, i, repeat)
 								p.lake_temperature,						# temperature profile
 								p.concentration_profile,						# concentration profile
 								p.lake_physics,
-								montecarlo_shuffle(p.growth_model),
+								p.growth_model, #montecarlo_shuffle(p.growth_model),
 								p.starttime,
 								p.endtime,
 								p.model_callback
 							)
 	u0 = [
-			(1.0+randn()/244.0)*prob.u0[1],  # hmix0
+			(1.0+randn()/104.0)*prob.u0[1],  # hmix0
 			volume_above(prob.p.bathymetry, prob.u0[1]),  # V0
 			(1.0+randn()/7.0)*prob.u0[3],  # C0
 			(1.0+randn()/8.0)*prob.u0[4],  # B0
