@@ -162,13 +162,13 @@ function boxmodel_prob_func(prob, i, repeat)
 								p.endtime,
 								p.model_callback
 							)
-	h_shuffled = prob.u0[1]#(1.0+randn()/104.0)*prob.u0[1]
+	h_shuffled = (1.0+randn()/500.0)*prob.u0[1]
 	u0 = [
 			h_shuffled,  # hmix0
 			volume_above(prob.p.bathymetry, h_shuffled),  # V0
-			(1.0+randn()/7.0)*prob.u0[3],  # C0
-			(1.0+randn()/8.0)*prob.u0[4],  # B0
-			prob.u0[5],#(1.0+randn()/244.0)*prob.u0[5],  # T0
+			(1.0+randn()/100.0)*prob.u0[3],  # C0
+			(1.0+randn()/100.0)*prob.u0[4],  # B0
+			(1.0+randn()/500.0)*prob.u0[5],  # T0
 			0.0, 0.0, 0.0, 0.0
 		]
 	ODEProblem(prob.f, u0, prob.tspan, lakemodel, callback=prob.callback)
