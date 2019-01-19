@@ -126,7 +126,7 @@ struct ConvectionLakePhysics{Traits} <: LakePhysics
 end
 
 # convection lake physics constructor
-ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, fwind) where Traits <: Any = begin
+ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, f_wind) where Traits <: Any = begin
 		a_T = 2.14e-4 # thermal expansion [K-1]
 		g = 9.80665  # gravitational acceleration [m^2 s-1]
 		β = g*a_T
