@@ -302,9 +302,9 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 					ϵ_h = ϵ_u(p, u, t, u[1])/0.6+2*ϵ_B(p,u,t)
 					# no thermocline erosion during warming
 					# no thermocline erosion if mixed layer is warmer than hypolimnion
-					if ϵ_h<0 | (u[5]>temperature_profile.at(u[1]))
-						return 0.0
-					else
+					#if ϵ_h<0 | (u[5]>temperature_profile.at(u[1]))
+					#	return 0.0
+					#else
 						#v=(1+2*A)*B0/(N2(p, u[1], u[5])*u[1])
 						v=(1+2*A)*ϵ_h/(N2(p, u[1], u[5])*u[1])
 						# don't allow rising of the thermocline
@@ -313,7 +313,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						else
 							return v
 						end
-					end
+					#end
 				end
 
 
