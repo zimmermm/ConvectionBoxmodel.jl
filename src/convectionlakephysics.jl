@@ -295,7 +295,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 @physicsfn dhdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = begin
 					# no thermocline deepening when the bottom of the lake is reached
 					# should be given as parameter in future versions!!
-					if u[1] > 16
+					if u[1] > 15.9
 						return 0.0
 					end
 					B0 = buoyancy_flux(p,u,t)
