@@ -126,7 +126,7 @@ struct ConvectionLakePhysics{Traits} <: LakePhysics
 end
 
 # convection lake physics constructor
-ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3) where Traits <: Any = begin
+ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, fwind) where Traits <: Any = begin
 		a_T = 2.14e-4 # thermal expansion [K-1]
 		g = 9.80665  # gravitational acceleration [m^2 s-1]
 		β = g*a_T
@@ -155,8 +155,6 @@ ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentrati
 		η = 1/(2*pi)  # according to Lorke et al. #0.29 # calibration constant
 		B = 0.62  # Bowen coefficient [mbar K-1]
 		c1 = 8.6
-
-		f_wind = 0.8
 
 		ConvectionLakePhysics{Traits}(
 			a_T,
