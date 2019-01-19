@@ -168,7 +168,7 @@ function boxmodel_prob_func(prob, i, repeat)
 			volume_above(prob.p.bathymetry, h_shuffled),  # V0
 			(1.0+randn()/7.0)*prob.u0[3],  # C0
 			(1.0+randn()/8.0)*prob.u0[4],  # B0
-			(1.0+randn()/244.0)*prob.u0[5],  # T0
+			prob.u0[5],#(1.0+randn()/244.0)*prob.u0[5],  # T0
 			0.0, 0.0, 0.0, 0.0
 		]
 	ODEProblem(prob.f, u0, prob.tspan, lakemodel, callback=prob.callback)
