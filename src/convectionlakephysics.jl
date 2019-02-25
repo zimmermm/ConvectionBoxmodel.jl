@@ -297,14 +297,14 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						return 0.0
 					end
 					B0 = buoyancy_flux(p,u,t)
-					ϵ_h = ϵ_u(p, u, t, u[1])+ϵ_B(p,u,t)
+					ϵ_h = (2*κ^2)*ϵ_u(p, u, t, u[1])+(1+2*A)*0.5*ϵ_B(p,u,t)
 					# no thermocline erosion during warming
 					# no thermocline erosion if mixed layer is warmer than hypolimnion
 					#if ϵ_h<0 | (u[5]>temperature_profile.at(u[1]))
 					#	return 0.0
 					#else
 						#v=(1+2*A)*B0/(N2(p, u[1], u[5])*u[1])
-						v=(1+2*A)*ϵ_h/(N2(p, u[1], u[5])*u[1])
+						v=ϵ_h/(N2(p, u[1], u[5])*u[1])
 						# don't allow rising of the thermocline
 						if v < 0.0
 							return 0.0
@@ -338,14 +338,14 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 ###############
 
 # Read et al.
-@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t,z)= u_w(p, f_wind*forcing.wind_speed.at(t))^3/(κ*z)
+@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t,z)= 0.6*u_w(p, f_wind*forcing.wind_speed.at(t))^3/(κ*z)
 @physicsfn ϵ_u(p::ConvectionLakePhysics,u,t)= ϵ_u(p,u,t,AML(p,u,t))
 @physicsfn ϵ_B(p::ConvectionLakePhysics, u,t)=	begin
 							B0 = buoyancy_flux(p,u,t)
 							if B0 < 0.0
 								0.0
 							else
-								B0
+								0.5*B0
 							end
 						end
 
