@@ -297,7 +297,8 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						return 0.0
 					end
 					B0 = buoyancy_flux(p,u,t)
-					ϵ_h = (2*κ^2)*ϵ_u(p, u, t, u[1])+(1+2*A)*0.5*ϵ_B(p,u,t)
+					#ϵ_h = (2*κ^2)*ϵ_u(p, u, t, u[1])+(1+2*A)*0.5*ϵ_B(p,u,t)
+					ϵ_h = (1+2*A)*(ϵ_u(p, u, t, u[1])+ϵ_B(p,u,t))
 					# no thermocline erosion during warming
 					# no thermocline erosion if mixed layer is warmer than hypolimnion
 					#if ϵ_h<0 | (u[5]>temperature_profile.at(u[1]))
