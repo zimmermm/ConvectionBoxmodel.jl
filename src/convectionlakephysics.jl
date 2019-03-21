@@ -217,7 +217,7 @@ ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentrati
 			scenario
 			)
 	end
-ConvectionLakePhysics(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, scenario) = ConvectionLakePhysics{DefaultPhysics}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, scenario)
+ConvectionLakePhysics(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, fwind, scenario) = ConvectionLakePhysics{DefaultPhysics}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, fwind, scenario)
 
 # macro to define lake physics functions in short notation
 macro physicsfn(fnexpr)
