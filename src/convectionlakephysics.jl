@@ -266,7 +266,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 																							end
 # wind_speed
 @physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, t) =	begin
-																				if scenario.enabled & t > scenario.starttime & t < scenario.endtime:
+																				if scenario.enabled & t > scenario.starttime & t < scenario.endtime
 																					scenario.wind_speed
 																				else
 																			    	f_wind*forcing.wind_speed.at(t)
