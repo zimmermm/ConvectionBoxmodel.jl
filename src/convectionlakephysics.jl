@@ -1,4 +1,15 @@
 #===================================
+Scenario
+===================================#
+struct ConvectionLakePhysicsScenario
+	enabled::Bool
+	starttime::Float64
+	endtime::Float64
+	windspeed::Float64
+	buoyancy_flux::Float64
+end
+
+#===================================
 Forcing Data
 ===================================#
 
@@ -123,10 +134,11 @@ struct ConvectionLakePhysics{Traits} <: LakePhysics
 	cheat1::Float64
 	cheat2::Float64
 	cheat3::Float64
+	scenario::ConvectionLakePhysicsScenario
 end
 
 # convection lake physics constructor
-ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, f_wind) where Traits <: Any = begin
+ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, f_wind, scenario) where Traits <: Any = begin
 		a_T = 2.14e-4 # thermal expansion [K-1]
 		g = 9.80665  # gravitational acceleration [m^2 s-1]
 		β = g*a_T
@@ -197,10 +209,11 @@ ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentrati
 			A,
 			cheat1,
 			cheat2,
-			cheat3
+			cheat3,
+			scenario
 			)
 	end
-ConvectionLakePhysics(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3) = ConvectionLakePhysics{DefaultLakePhysics}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3)
+ConvectionLakePhysics(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, scenario) = ConvectionLakePhysics{DefaultLakePhysics}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, scenario)
 
 # macro to define lake physics functions in short notation
 macro physicsfn(fnexpr)
@@ -251,6 +264,15 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 																								dρdz = (ρhypo-ρmix)/0.1  # density gradient. assumption that gradient is 0.1m thick
 																								g/ρhypo*dρdz  # Brunt-Väisälä frequency
 																							end
+# wind_speed
+@physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, t) =	begin
+																				if scenario.enabled & t > scenario.starttime & t < scenario.endtime:
+																					scenario.wind_speed
+																				else
+																			    	f_wind*forcing.wind_speed.at(t)
+																			    end
+																			end
+
 
 # Heat flux
 #----------------
@@ -280,39 +302,35 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # total heat balance [W m-2]
 @physicsfn heat_flux_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(p, U10, Tw, Ta) + He_simstrat(p, U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(p, Ta, cloud_cover, vapour_pressure)+Hw_simstrat(p, Tw)+cheat3*global_radiation
 
-@physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(p, f_wind*forcing.wind_speed.at(t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
+@physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(p, wind_speed_at(p,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
 
 @physicsfn dTdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = heat_flux(p, u,t)/(rho*Cp)
 
 # Buoyancy foring: Convective thickening of the mixed layer
 ##########################################
 # Buoyancy Flux [m2 s-3]
-@physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = -β*dTdt(p, u,t)
+@physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = begin
+																				if scenario.enabled & t > scenario.starttime & t < scenario.endtime
+																					scenario.buoyancy_flux
+																				else
+																					-β*dTdt(p, u,t)
+																				end
+																			end
 # thickening rate
-# Zilitinkevich 1991
+# Zilitinkevich 1991 combined with Cushman-Roisin
 @physicsfn dhdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = begin
 					# no thermocline deepening when the bottom of the lake is reached
 					# should be given as parameter in future versions!!
 					if u[1] > 15.9
 						return 0.0
 					end
-					#B0 = buoyancy_flux(p,u,t)
-					ϵ_h = 1.0*ϵ_u(p, u, t, u[1])+(1.0+2.0*A)*ϵ_B(p,u,t)
-					#ϵ_h = (1+2*A)*buoyancy_flux(p,u,t)
-					# no thermocline erosion during warming
-					# no thermocline erosion if mixed layer is warmer than hypolimnion
-					#if ϵ_h<0 | (u[5]>temperature_profile.at(u[1]))
-					#	return 0.0
-					#else
-						#v=(1+2*A)*B0/(N2(p, u[1], u[5])*u[1])
-						v=ϵ_h/(N2(p, u[1], u[5])*u[1])
-						# don't allow rising of the thermocline
-						if v < 0.0
-							return 0.0
-						else
-							return v
-						end
-					#end
+					v=(2.0*ϵ_u(p, u, t, u[1])+(1.0+2.0*A)*ϵ_B(p,u,t))/(N2(p, u[1], u[5])*u[1])
+					# don't allow rising of the thermocline
+					if v < 0.0
+						return 0.0
+					else
+						return v
+					end
 				end
 
 
@@ -339,7 +357,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 ###############
 
 # Read et al.
-@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t,z)= u_w(p, f_wind*forcing.wind_speed.at(t))^3/(κ*z)
+@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t,z)= u_w(p, wind_speed_at(p,t))^3/(κ*z)
 @physicsfn ϵ_u(p::ConvectionLakePhysics,u,t)= ϵ_u(p,u,t,AML(p,u,t))
 @physicsfn ϵ_B(p::ConvectionLakePhysics, u,t)=	begin
 							B0 = buoyancy_flux(p,u,t)
@@ -351,15 +369,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						end
 
 @physicsfn ϵ(p::ConvectionLakePhysics,u,t) = ϵ_u(p,u,t)+ϵ_B(p,u,t)
-#begin
-#	return 1e-9
-#	ϵ_uB = ϵ_u(p,u,t)+ϵ_B(p,u,t)
-#	if ϵ_uB > 1e-7
-#		return 1e-7
-#	else
-#		return ϵ_uB
-#	end
-#end
+
 
 # Air/Water transfer velocity
 #############################
@@ -381,4 +391,4 @@ Sc_ch4_Wanninkhof(T) = 1909.4 - 120.78*(T-273.15) + 4.1555*((T-273.15)^2) - 0.08
 # Wind penetration depth: deprecated!
 #########################################
 # Monin-Obukhov length scale (Tedford 2014)
-@physicsfn AML(p::ConvectionLakePhysics{<:DefaultPhysics},u,t) = δv(p,f_wind*forcing.wind_speed.at(t))
+@physicsfn AML(p::ConvectionLakePhysics{<:DefaultPhysics},u,t) = δv(p,wind_speed_at(p,t))
