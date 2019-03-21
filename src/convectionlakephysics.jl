@@ -314,10 +314,15 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 ##########################################
 # Buoyancy Flux [m2 s-3]
 @physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = begin
+																				B0=-β*dTdt(p, u,t)
 																				if scenario.buoyancy_enabled & (t > scenario.buoyancy_start) & (t < scenario.buoyancy_end)
-																					scenario.buoyancy_constant
+																					if B0 > 0.0
+																						scenario.buoyancy_constant
+																					else
+																						0.0
+																					end
 																				else
-																					-β*dTdt(p, u,t)
+																					B0
 																				end
 																			end
 # thickening rate
