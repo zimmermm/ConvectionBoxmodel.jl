@@ -2,11 +2,15 @@
 Scenario
 ===================================#
 struct ConvectionLakePhysicsScenario
-	enabled::Bool
-	starttime::Float64
-	endtime::Float64
-	windspeed::Float64
-	buoyancy_flux::Float64
+	wind_enabled::Bool
+	wind_start::Float64
+	wind_end::Float64
+	wind_constant::Float64
+	
+	buoyancy_enabled::Bool
+	buoyancy_start::Float64
+	buoyancy_end::Float64
+	buoyancy_constant::Float64
 end
 
 #===================================
@@ -266,8 +270,8 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 																							end
 # wind_speed
 @physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, t) =	begin
-																				if scenario.enabled & (t > scenario.starttime) & (t < scenario.endtime)
-																					scenario.wind_speed
+																				if scenario.wind_enabled & (t > scenario.wind_start) & (t < scenario.wind_end)
+																					scenario.wind_constant
 																				else
 																			    	f_wind*forcing.wind_speed.at(t)
 																			    end
@@ -310,8 +314,8 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 ##########################################
 # Buoyancy Flux [m2 s-3]
 @physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = begin
-																				if scenario.enabled & (t > scenario.starttime) & (t < scenario.endtime)
-																					scenario.buoyancy_flux
+																				if scenario.buoyancy_enabled & (t > scenario.buoyancy_start) & (t < scenario.buoyancy_end)
+																					scenario.buoyancy_constant
 																				else
 																					-β*dTdt(p, u,t)
 																				end
