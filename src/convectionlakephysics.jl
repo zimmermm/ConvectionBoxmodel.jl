@@ -277,9 +277,9 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 																								g/ρhypo*dρdz  # Brunt-Väisälä frequency
 																							end
 # wind_speed
-@physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, t) =	begin
+@physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
 																				if scenario.wind_enabled & (t > scenario.wind_start) & (t < scenario.wind_end)
-																					scenario.eps_U10_emulator.at(p.u[1]*scenario.wind_constant)
+																					scenario.eps_U10_emulator.at(u[1]*scenario.wind_constant)
 																				else
 																			    	f_wind*forcing.wind_speed.at(t)
 																			    end
@@ -314,7 +314,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # total heat balance [W m-2]
 @physicsfn heat_flux_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(p, U10, Tw, Ta) + He_simstrat(p, U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(p, Ta, cloud_cover, vapour_pressure)+Hw_simstrat(p, Tw)+cheat3*global_radiation
 
-@physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(p, wind_speed_at(p,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
+@physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(p, wind_speed_at(p,u,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
 
 @physicsfn dTdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = heat_flux(p, u,t)/(rho*Cp)
 
@@ -374,7 +374,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 ###############
 
 # Read et al.
-@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t,z)= u_w(p, wind_speed_at(p,t))^3/(κ*z)
+@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t,z)= u_w(p, wind_speed_at(p,u,t))^3/(κ*z)
 @physicsfn ϵ_u(p::ConvectionLakePhysics,u,t)= ϵ_u(p,u,t,AML(p,u,t))
 @physicsfn ϵ_B(p::ConvectionLakePhysics, u,t)=	begin
 							B0 = buoyancy_flux(p,u,t)
@@ -408,4 +408,4 @@ Sc_ch4_Wanninkhof(T) = 1909.4 - 120.78*(T-273.15) + 4.1555*((T-273.15)^2) - 0.08
 # Wind penetration depth: deprecated!
 #########################################
 # Monin-Obukhov length scale (Tedford 2014)
-@physicsfn AML(p::ConvectionLakePhysics{<:DefaultPhysics},u,t) = δv(p,wind_speed_at(p,t))
+@physicsfn AML(p::ConvectionLakePhysics{<:DefaultPhysics},u,t) = δv(p,wind_speed_at(p,u,t))
