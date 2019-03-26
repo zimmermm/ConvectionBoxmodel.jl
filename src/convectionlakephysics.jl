@@ -6,12 +6,20 @@ struct ConvectionLakePhysicsScenario
 	wind_start::Float64
 	wind_end::Float64
 	wind_constant::Float64
+	eps_emulator::Interpolation
 	
 	buoyancy_enabled::Bool
 	buoyancy_start::Float64
 	buoyancy_end::Float64
 	buoyancy_constant::Float64
 end
+
+include("u_w_emulator.jl")
+
+ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant) = begin
+	ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, eps_U10_emulator, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant)
+end
+precompile(inflow_from_dataset, (Bool,Float64,Float64,Float64,Interpolation,Bool,Float64,Float64,Float64))
 
 #===================================
 Forcing Data
@@ -271,6 +279,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # wind_speed
 @physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, t) =	begin
 																				if scenario.wind_enabled & (t > scenario.wind_start) & (t < scenario.wind_end)
+																					# use emulator to get wind_speed for a specific dissipation and depth
 																					scenario.wind_constant
 																				else
 																			    	f_wind*forcing.wind_speed.at(t)
