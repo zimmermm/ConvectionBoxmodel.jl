@@ -19,7 +19,7 @@ include("eps_U10_emulator.jl")
 ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant) = begin
 	ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, eps_U10_emulator, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant)
 end
-precompile(inflow_from_dataset, (Bool,Float64,Float64,Float64,Interpolation,Bool,Float64,Float64,Float64))
+precompile(ConvectionLakePhysicsScenario, (Bool,Float64,Float64,Float64,Interpolation,Bool,Float64,Float64,Float64))
 
 #===================================
 Forcing Data
