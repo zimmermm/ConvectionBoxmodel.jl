@@ -6,7 +6,7 @@ struct ConvectionLakePhysicsScenario
 	wind_start::Float64
 	wind_end::Float64
 	wind_constant::Float64
-	eps_emulator::Interpolation
+	eps_U10_emulator::Interpolation
 	
 	buoyancy_enabled::Bool
 	buoyancy_start::Float64
