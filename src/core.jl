@@ -1,40 +1,39 @@
 #============================================
+Core structures of the model
 * Data structures
 * System of ODE
 * Solver
-
-I do not follow Julias intended code style and use structures as kind of objects with properties and functions
-In future versions I might change this.. 
 =============================================#
 
 
 #===================================
-Lake Model
+Datastructure defining the model
 ===================================#
 
 # Interface to user defined functions of the model
 struct LakeModel
+	# domain and initialization
 	bathymetry::Interpolation{<:Any}
-
 	initial_condition::Array{Float64,1}
 
 	# static profiles
 	lake_temperature::Interpolation{<:Any}
 	concentration_profile::Interpolation{<:Any}
 
+	# physical and biological model
 	lake_physics::LakePhysics
-
 	growth_model::MOBGrowthModel
 
+	# simulation constraints
 	starttime::Float64
 	endtime::Float64
 	model_callback::ContinuousCallback
 end
 
 
-#===================================
-Boxmodel
-===================================#
+#=========================================
+System of ordinary differential equations 
+=========================================#
 
 function boxmodel_ode(du,u,lakemodel,t)
 	h_mix, V, C, B, T, Qatm, Qmix, Qmox, Qdiff = u
@@ -76,12 +75,14 @@ function createODEProblem(lakemodel)
 	# ODEProblem
 	ODEProblem(boxmodel_ode,u0,tspan,lakemodel,callback=lakemodel.model_callback)
 end
+precompile(createODEProblem, (LakeModel,))
 
 #===================================
 Solver
 ===================================#
 
-function solve_boxmodel(lakemodel; saveat=[])
+# high resolution
+function solve_boxmodel_highres(lakemodel; saveat=[])
 	# assemble initial conditions
 	h_mix0, C0, B0, T0 = lakemodel.initial_condition
 	V0 = volume_above(lakemodel.bathymetry, h_mix0)
@@ -101,9 +102,10 @@ function solve_boxmodel(lakemodel; saveat=[])
 		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-4, abstol=1.0e-2, dtmax=1.0/24.0/60.0, saveat=saveat)
 	end
 end
-#precompile(solve_boxmodel, (LakeModel,))
+precompile(solve_boxmodel, (LakeModel, Array{Float64,1}))
 
-function solve_boxmodel_model(lakemodel; saveat=[])
+# low resolution
+function solve_boxmodel_lowres(lakemodel; saveat=[])
 	# assemble initial conditions
 	h_mix0, C0, B0, T0 = lakemodel.initial_condition
 	V0 = volume_above(lakemodel.bathymetry, h_mix0)
@@ -123,7 +125,10 @@ function solve_boxmodel_model(lakemodel; saveat=[])
 		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0, saveat=saveat)
 	end
 end
+precompile(solve_boxmodel, (LakeModel, Array{Float64,1}))
 
+# montecarlo
+# ==============================
 
 function solve_boxmodel_montecarlo(lakemodel, num_monte)
 	# assemble initial conditions
@@ -146,7 +151,7 @@ function solve_boxmodel_montecarlo(lakemodel, num_monte)
 	# solve
 	@time solve(montecarlo, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0, num_monte=num_monte, parallel_type=:none)
 end
-precompile(solve_boxmodel_montecarlo, (LakeModel,))
+precompile(solve_boxmodel_montecarlo, (LakeModel,Int64))
 
 
 function boxmodel_prob_func(prob, i, repeat)

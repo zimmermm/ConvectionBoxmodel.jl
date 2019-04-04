@@ -1,4 +1,4 @@
-# event definition
+# event definitions
 function fully_mixed()
 	condition(u,t,integrator) =	begin
 						if u[1]>16.

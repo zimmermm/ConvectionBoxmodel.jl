@@ -1,13 +1,13 @@
-__precompile__()
+"""
+	ConvectionBoxmodel
+
+API to model a lake overturn as a one-box-model with expanding box size.
+Author: Matthias Zimmermann
+"""
 module ConvectionBoxmodel
 
-#=========================================
-This module contains the API to
-model a mixing lake as a one-box-model
-with expanding box size
-=========================================#
-
-#using DifferentialEquations
+# Imports
+# ====================================
 using DifferentialEquations
 using Interpolations: interpolate, Gridded, Linear
 using DataFrames
@@ -15,10 +15,11 @@ using Calculus: derivative
 using CSV
 using Dates
 
+# Exports
+# ====================================
+
 # ConvectionBoxmodel
-export	@load_prototype,
-		call_prototype,
-		days_to_datetime,
+export	days_to_datetime,
 		datetime_to_days
 
 export	interp1d,
@@ -82,68 +83,52 @@ export	LakeModel,
 		solve_boxmodel_montecarlo,
 		boxmodel_prob_func
 
-######################
-# date conversion
-######################
+#========================
+Date conversion
+=========================#
+
 function datetime_to_days(datetime::Dates.DateTime)
-	(datetime-Dates.DateTime(1970)).value/1e3/3600/24.
+	# Converts datetime object to days since 01.01.1970 as Float64.
+	(datetime-Dates.DateTime(1970)).value/1.0e3/3600.0/24.0
 end
 precompile(datetime_to_days, (Dates.DateTime,))
 
 function days_to_datetime(days)
-	Dates.DateTime(1970)+Dates.Nanosecond(floor(days*24*3600*1e9))
+	#Converts days since 01.01.1970 to DateTime object.
+	Dates.DateTime(1970)+Dates.Nanosecond(floor(days*24.0*3600.0*1.0e9))
 end
 precompile(days_to_datetime, (Float64,))
 precompile(days_to_datetime, (Int64,))
 
-####################################
-# Prototyping
-####################################
-macro load_prototype(path)
-	quote
-		file = open($(esc(path)))
-		s = readstring(file)
-		close(file)
-		eval(parse(s))
-	end
-end
+#========================
+Linear interpolation
+=========================#
 
-function call_prototype(f, args...)
-	Base.invokelatest(f, args...)
-end
-
-####################################
-# Linear Interpolation
-####################################
-interp1d(x::Array{T,1}, y::Array{T,1}) where T<:Number = begin
-							itp = interpolate((x,), y, Gridded(Linear()))
-							(at) -> itp(at)
-						end
-precompile(interp1d, (Array{Float64,1}, Array{Float64,1}))
-interp1d!(x,y) = interp1d(convert(Array{Float64}, x), convert(Array{Float64}, y)) 
-
-
+# generic interpolator datastructure
 struct Interpolation{InterpolationMethod}
-	x::Array{<:Real,1}
-	y::Array{<:Real,1}
-	at::Function
+	x::Array{<:Real,1}  # 1d domain
+	y::Array{<:Real,1}  # 1d data
+	at::Function  # interpolator
 end
-
-const LinearInterpolation = Interpolation{:Linear}
-(::Type{Interpolation{:Linear}})(x::Array{<:Real,1}, y::Array{<:Real,1}) = Interpolation{:Linear}(x, y, interp1d(x, y))
-(::Type{Interpolation{:Linear}})(x::Array{<:Float64,1}, y::Array{<:Int64,1}) = Interpolation{:Linear}(x, y, interp1d!(x, y))
 
 top(i::Interpolation{<:Any}) = i.x[1]
 bottom(i::Interpolation{<:Any}) = i.x[end]
 
-#function trapz(x::Array{Float64,1}, y::Array{Float64,1})
-#	dx = x[2:end]-x[1:end-1]
-#	yt = y[1:end-1]
-#	[0;cumsum(yt.*dx)]
-#end
-#precompile(trapz, (Array{Float64,1}, Array{Float64,1}))
+# linear interpolator
+interp1d(x::Array{T,1}, y::Array{T,1}) where T<:Number = begin
+							interpolate((x,), y, Gridded(Linear()))
+						end
+precompile(interp1d, (Array{Float64,1}, Array{Float64,1}))
+interp1d!(x,y) = interp1d(convert(Array{Float64}, x), convert(Array{Float64}, y)) 
+
+# implementation for linear interpolation
+const LinearInterpolation = Interpolation{:Linear}
+(::Type{Interpolation{:Linear}})(x::Array{<:Real,1}, y::Array{<:Real,1}) = Interpolation{:Linear}(x, y, interp1d(x, y))
+(::Type{Interpolation{:Linear}})(x::Array{<:Float64,1}, y::Array{<:Int64,1}) = Interpolation{:Linear}(x, y, interp1d!(x, y))
 
 
+# Includes
+# =========================
 include("profileshapes.jl")
 include("callbacks.jl")
 include("bathymetries.jl")
@@ -151,4 +136,4 @@ include("convectionlakephysics.jl")
 include("growthmodels.jl")
 include("core.jl")
 
-end # module
+end

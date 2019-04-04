@@ -1,9 +1,11 @@
-#===================================
+#==================================================================
 Bathymetry Implementations
-===================================#
-# Datastructure is a (depth, area) Interpolation
 
-# additional functionality
+The Datastructure of a Bathymetry is a (depth, area) Interpolation
+===================================================================#
+
+
+# additional functionality related to bathymetry
 surface_area(bathymetry::Interpolation{<:Any}) = bathymetry.y[1]
 volume_above(bathymetry::Interpolation{<:Any},depth; dh=0.01) = begin
 									grid = equigrid(top(bathymetry), depth, dh=dh)

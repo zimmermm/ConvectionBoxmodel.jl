@@ -2,6 +2,7 @@
 Profile shapes library
 ===================================#
 
+# predefined mathematical shapes
 function FermiProfile(Qtop, Qbottom, z_interface, w_interface)
 	depth -> Qbottom+(Qtop-Qbottom)./(1.0+exp.((depth-z_interface)/w_interface))
 end
@@ -15,23 +16,9 @@ function StepProfile(Qtop, Qbottom, z_bottom, z_interface, sharpness)
 	depth -> Qtop+slope.*log.(1.0+exp.(sharpness*(depth-z_interface)))
 end
 
+# read from tabular data
 function DataProfile(path)
 	profile_data = CSV.read(path, types=[Float64, Float64], allowmissing=:none)
 	LinearInterpolation(profile_data[Symbol("Depth")], profile_data[Symbol("Value")])
 end
 precompile(DataProfile, (String,))
-
-
-#function initial_T_profile_from_simstrat_ic(path)
-#	ic_df = CSV.read(path, delim="\t")
-#	interp1d(-ic_df[Symbol("depth (m)")], ic_df[Symbol("T (°C)")]+273.15)
-#end
-#precompile(initial_T_profile_from_simstrat_ic, (String,))
-#
-#function initial_T_profile_from_simstrat_output(path)
-#	data, header = readdlm(path, header=true)
-#	df = DataFrame(data)
-#	names!(df, [Symbol("$name") for name in header[1,:]])
-#	df
-#end
-#precompile(initial_T_profile_from_simstrat_output, (String,))

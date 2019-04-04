@@ -1,6 +1,13 @@
-#===================================
+#========================================
 Scenario
-===================================#
+
+Define time periods where the rate of
+dissipation of wind and convection induced
+TKE is artificially set to a constant
+value.
+=========================================#
+
+# Datastructure
 struct ConvectionLakePhysicsScenario
 	wind_enabled::Bool
 	wind_start::Float64
@@ -16,15 +23,20 @@ end
 
 include("eps_U10_emulator.jl")
 
+# Constructor for datastructure
 ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant) = begin
 	ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, eps_U10_emulator, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant)
 end
 precompile(ConvectionLakePhysicsScenario, (Bool,Float64,Float64,Float64,Interpolation,Bool,Float64,Float64,Float64))
 
-#===================================
-Forcing Data
-===================================#
+#=============================================
+Meteorological Forcing
 
+Datastructure containing interpolators for
+meteorological data provided as tabular data.
+=============================================#
+
+# Datastructure
 struct MeteorologicalForcing
 	air_temperature::Interpolation
 	cloud_cover::Interpolation
@@ -33,20 +45,21 @@ struct MeteorologicalForcing
 	wind_speed::Interpolation
 end
 
+# Factory for datastructure
 function forcing_from_dataset(path)
 	# load simstrat forcing dataset
-	forcing_df = CSV.read(path, delim="\t")
-	forcing_df = disallowmissing!(forcing_df[completecases(forcing_df),:])
+	# ==============================
+	forcing_df = CSV.read(path, delim="\t")  # read csv
+	forcing_df = disallowmissing!(forcing_df[completecases(forcing_df),:])  # remove missing values
 
-	##########################################
 	# interpolators for individual data series
-	##########################################
+	# =========================================
 	timestamps = forcing_df[:t]
 	air_temperature = LinearInterpolation(timestamps, forcing_df[Symbol("Tair (°C)")].+273.15)
 	cloud_cover = LinearInterpolation(timestamps, forcing_df[Symbol("cloud coverage")])
 	vapour_pressure = LinearInterpolation(timestamps, forcing_df[Symbol("vap (mbar)")])
 
-	# wind speed
+	# combine wind speed components
 	u10 = forcing_df[Symbol("u (m/s)")]
 	v10 = forcing_df[Symbol("v (m/s)")]
 	wind_speed = LinearInterpolation(timestamps, sqrt.(u10.^2+v10.^2))
@@ -66,6 +79,7 @@ function forcing_from_dataset(path)
 	Hs = (1-0.08)*G
 	global_radiation = LinearInterpolation(timestamps, Hs)
 
+	# return data object
 	MeteorologicalForcing(air_temperature, cloud_cover, vapour_pressure, global_radiation, wind_speed)
 end
 precompile(forcing_from_dataset, (String,))
@@ -73,19 +87,22 @@ precompile(forcing_from_dataset, (String,))
 #===================================
 Inflow
 ===================================#
+
+# Datastructure
 struct Inflow
 	flow::Interpolation
 	temperature::Interpolation
 end
 
+# Factory for datastructure
 function inflow_from_dataset(path)
 	# load simstrat forcing dataset
+	# ==============================
 	inflow_df = CSV.read(path, delim=",")
 	inflow_df = disallowmissing!(inflow_df[completecases(inflow_df),:])
 
-	##########################################
 	# interpolators for individual data series
-	##########################################
+	# ========================================
 	timestamps = inflow_df[:Timestamp]
 	flow = LinearInterpolation(timestamps, inflow_df[:Flow])
 	temperature = LinearInterpolation(timestamps, inflow_df[:Temp].+273.15)
@@ -94,15 +111,23 @@ function inflow_from_dataset(path)
 end
 precompile(inflow_from_dataset, (String,))
 
-#===================================
+#=============================================
 LakePhysics
-===================================#
-# traits
+
+* Datastructure that contains a set
+of physical and empirical constants.
+
+* Functionality based on data trait
+==============================================#
+
+# trait type system
 abstract type DefaultPhysics end
 
-# lake physics
+# lake physics type system
 abstract type LakePhysics end
 
+# ConvectionLakePhysics implementation
+# ======================================
 struct ConvectionLakePhysics{Traits} <: LakePhysics
 	# constants
 	a_T::Float64
@@ -149,7 +174,7 @@ struct ConvectionLakePhysics{Traits} <: LakePhysics
 	scenario::ConvectionLakePhysicsScenario
 end
 
-# convection lake physics constructor
+# Constructor
 ConvectionLakePhysics{Traits}(temperature_profile, salinity_profile, concentration_profile, forcing, inflow, bathymetry, A, cheat1, cheat2, cheat3, f_wind, scenario) where Traits <: Any = begin
 		a_T = 2.14e-4 # thermal expansion [K-1]
 		g = 9.80665  # gravitational acceleration [m^2 s-1]
@@ -246,14 +271,15 @@ macro physicsfn(fnexpr)
 	eval(Meta.parse(fnrepr))
 end
 
-########################
-# lake physics functions
-########################
-# toplevel functions used by the solver
-# dhdt(u,t)
-# dTdt(u,t)
-# Fatm(u,t)
-# F_diff(u,t)
+
+# Functionality
+#=================================
+toplevel functions used by the solver
+dhdt(u,t)
+dTdt(u,t)
+Fatm(u,t)
+F_diff(u,t)
+=================================#
 
 # density
 #-----------
@@ -290,9 +316,9 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 #----------------
 
 # Heat flux at the surface
-##########################
 # positive flux: warming
 # negative flux: cooling
+
 #*** Longwave
 # emissivity
 @physicsfn Ea(p::ConvectionLakePhysics{<:DefaultPhysics}, Ta, cloud_cover, vapour_pressure) = (1.0+0.17*cloud_cover^2)*1.24*(vapour_pressure/Ta)^(1.0/7.0)
@@ -375,7 +401,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 
 # Read et al.
 @physicsfn ϵ_u(p::ConvectionLakePhysics,u,t,z)= u_w(p, wind_speed_at(p,u,t))^3/(κ*z)
-@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t)= ϵ_u(p,u,t,AML(p,u,t))
+@physicsfn ϵ_u(p::ConvectionLakePhysics,u,t)= ϵ_u(p,u,t,δv(p,wind_speed_at(p,u,t)))
 @physicsfn ϵ_B(p::ConvectionLakePhysics, u,t)=	begin
 							B0 = buoyancy_flux(p,u,t)
 							if B0 < 0.0
@@ -405,7 +431,3 @@ Sc_ch4_Wanninkhof(T) = 1909.4 - 120.78*(T-273.15) + 4.1555*((T-273.15)^2) - 0.08
 @physicsfn Fatm_B(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = -k_B(p,u,t)*(u[3]-Ceq_ch4(p,u[5],0)*1e6)
 
 @physicsfn F_diff(p::ConvectionLakePhysics{<:DefaultPhysics},u,t) = max(4e-8, 2.11e-8*u[1]-1.57e-7)/12*1e12/bathymetry.at(u[1])
-# Wind penetration depth: deprecated!
-#########################################
-# Monin-Obukhov length scale (Tedford 2014)
-@physicsfn AML(p::ConvectionLakePhysics{<:DefaultPhysics},u,t) = δv(p,wind_speed_at(p,u,t))
