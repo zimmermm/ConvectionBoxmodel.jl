@@ -79,7 +79,8 @@ export	LakePhysics,
 export	LakeModel,
 		boxmodel_ode,
 		createODEProblem,
-		solve_boxmodel,
+		solve_boxmodel_highres,
+		solve_boxmodel_lowres,
 		solve_boxmodel_montecarlo,
 		boxmodel_prob_func
 
