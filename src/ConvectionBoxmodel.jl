@@ -116,7 +116,7 @@ bottom(i::Interpolation{<:Any}) = i.x[end]
 
 # linear interpolator
 interp1d(x::Array{T,1}, y::Array{T,1}) where T<:Number = begin
-							itp=interpolate((x,), y, Gridded(Linear()))
+							itp = interpolate((x,), y, Gridded(Linear()))
 							(at) = itp(at)
 						end
 precompile(interp1d, (Array{Float64,1}, Array{Float64,1}))
