@@ -102,7 +102,7 @@ function solve_boxmodel_highres(lakemodel; saveat=[])
 		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-4, abstol=1.0e-2, dtmax=1.0/24.0/60.0, saveat=saveat)
 	end
 end
-precompile(solve_boxmodel, (LakeModel, Array{Float64,1}))
+precompile(solve_boxmodel_highres, (LakeModel, Array{Float64,1}))
 
 # low resolution
 function solve_boxmodel_lowres(lakemodel; saveat=[])
@@ -125,7 +125,7 @@ function solve_boxmodel_lowres(lakemodel; saveat=[])
 		@time solve(prob, Rosenbrock23(autodiff=false), reltol=1.0e-2, abstol=1.0e-2, dtmax=1.0/24.0, saveat=saveat)
 	end
 end
-precompile(solve_boxmodel, (LakeModel, Array{Float64,1}))
+precompile(solve_boxmodel_lowres, (LakeModel, Array{Float64,1}))
 
 # montecarlo
 # ==============================
