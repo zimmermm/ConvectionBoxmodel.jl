@@ -395,10 +395,18 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 @physicsfn u_w(p::ConvectionLakePhysics{<:DefaultPhysics}, U10) = sqrt.(τ(p, U10)/rho)
 # thickness of diffusive boundary layer
 @physicsfn δv(p::ConvectionLakePhysics{<:DefaultPhysics}, U10) = c1*ν/u_w(p, U10)
-@physicsfn w_star(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = (buoyancy_flux(p,u,t)*u[1])^(1.0/3.0)
+@physicsfn w_star(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = begin
+																		B0 = buoyancy_flux(p,u,t)
+																		if B0 <= 0.0
+																			return 0.0
+																		else
+																			return (buoyancy_flux(p,u,t)*u[1])^(1.0/3.0)
+																		end
+																	 end
+
 @physicsfn LMO(p::ConvectionLakePhysics,u,t) = 	begin
 													B0 = buoyancy_flux(p,u,t)
-													if B0 == 0
+													if B0 <= 0.0
 														return 0.0
 													else
 														return u_w(p, wind_speed_at(p,u,t))^3/(κ*B0)
