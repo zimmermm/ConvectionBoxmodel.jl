@@ -72,7 +72,7 @@ export	LakePhysics,
 		k, k_u, k_B,
 		Fatm, Fatm_u, Fatm_B,
 		F_diff,
-		AML,
+		LMO,
 		buoyancy_flux
 
 # core

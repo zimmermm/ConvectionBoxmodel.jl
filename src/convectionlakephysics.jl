@@ -367,7 +367,8 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 					if u[1] > 15.9
 						return 0.0
 					end
-					v=(2.0*ϵ_u(p, u, t, u[1])+(1.0+2.0*A)*ϵ_B(p,u,t))/(N2(p, u[1], u[5])*u[1])
+					#v=(2.0*ϵ_u(p, u, t, u[1])+(1.0+2.0*A)*ϵ_B(p,u,t))/(N2(p, u[1], u[5])*u[1])
+					v=(2.5*u_w(p, wind_speed_at(p,u,t))^3+(1.0+2.0*A)*w_star(p,u,t)^3)/(N2(p, u[1], u[5])*u[1]^2)
 					# don't allow rising of the thermocline
 					if v < 0.0
 						return 0.0
@@ -394,6 +395,15 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 @physicsfn u_w(p::ConvectionLakePhysics{<:DefaultPhysics}, U10) = sqrt.(τ(p, U10)/rho)
 # thickness of diffusive boundary layer
 @physicsfn δv(p::ConvectionLakePhysics{<:DefaultPhysics}, U10) = c1*ν/u_w(p, U10)
+@physicsfn w_star(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = (buoyancy_flux(p,u,t)*u[1])^(1.0/3.0)
+@physicsfn LMO(p::ConvectionLakePhysics,u,t) = 	begin
+													B0 = buoyancy_flux(p,u,t)
+													if B0 == 0
+														return 0.0
+													else
+														return u_w(p, wind_speed_at(p,u,t))^3/(κ*B0)
+													end
+												end
 
 
 # Dissipation
@@ -412,7 +422,6 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						end
 
 @physicsfn ϵ(p::ConvectionLakePhysics,u,t) = ϵ_u(p,u,t)+ϵ_B(p,u,t)
-
 
 # Air/Water transfer velocity
 #############################
