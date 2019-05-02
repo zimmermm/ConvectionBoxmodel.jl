@@ -409,7 +409,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 													if B0 <= 0.0
 														return 0.0
 													else
-														return u_w(p, wind_speed_at(p,u,t))^3/κ*B0
+														return u_w(p, wind_speed_at(p,u,t))^3/(κ*B0)
 													end
 												end
 
