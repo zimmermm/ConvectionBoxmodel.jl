@@ -365,11 +365,11 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 @physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = begin
 																				B0=-β*dTdt(p, u,t)
 																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
-																					if B0 > 0.0
+																					#if B0 > 0.0
 																						scenario.total_energy*(1.0-scenario.wind_fraction)
-																					else
+																					#else
 																						0.0
-																					end
+																					#end
 																				else
 																					B0
 																				end
@@ -383,7 +383,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						return 0.0
 					end
 					# complete scenarios settings
-					if scenario.enabled & (scenario.scenario_end == 0.0) & (scenario.start_depth > u[1])
+					if scenario.enabled & (scenario.scenario_end == 0.0) & (u[1] > scenario.start_depth)
 						scenario.scenario_end = t+scenario.duration
 					end
 					#v=(2.0*ϵ_u(p, u, t, u[1])+(1.0+2.0*A)*ϵ_B(p,u,t))/(N2(p, u[1], u[5])*u[1])
