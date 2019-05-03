@@ -320,7 +320,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # wind_speed
 @physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
 																					if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
-																						scenario.eps_U10_emulator.at(u[1]*scenario.total_energy*scenario.wind_fraction/2.5)
+																						scenario.eps_U10_emulator.at(u[1]*scenario.total_energy*scenario.wind_fraction/2.5*κ)
 																					else
 																						f_wind*forcing.wind_speed.at(t)
 																					end
