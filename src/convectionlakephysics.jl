@@ -320,7 +320,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # wind_speed
 @physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
 																					if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
-																						scenario.eps_U10_emulator.at(u[1]*scenario.total_energy*scenario.wind_fraction/2.5*κ)
+																						scenario.eps_U10_emulator.at(u[1]*scenario.total_energy*scenario.wind_fraction/(2.5*κ))
 																					else
 																						f_wind*forcing.wind_speed.at(t)
 																					end
@@ -386,8 +386,12 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 					if scenario.enabled & (scenario.scenario_end == 0.0) & (u[1] > scenario.start_depth)
 						scenario.scenario_end = t+scenario.duration
 					end
+
 					#v=(2.0*ϵ_u(p, u, t, u[1])+(1.0+2.0*A)*ϵ_B(p,u,t))/(N2(p, u[1], u[5])*u[1])
 					v=(2.5*u_w(p, wind_speed_at(p,u,t))^3+(1.0+2.0*A)*w_star(p,u,t)^3)/(N2(p, u[1], u[5])*u[1]^2)
+					if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
+						println((2.5*u_w(p, wind_speed_at(p,u,t))^3+(1.0+2.0*A)*w_star(p,u,t)^3)/u[1])
+					end
 					# don't allow rising of the thermocline
 					if v < 0.0
 						return 0.0
