@@ -8,26 +8,41 @@ value.
 =========================================#
 
 # Datastructure
-struct ConvectionLakePhysicsScenario
-	wind_enabled::Bool
-	wind_start::Float64
-	wind_end::Float64
-	wind_constant::Float64
+#struct ConvectionLakePhysicsScenario
+#	wind_enabled::Bool
+#	wind_start::Float64
+#	wind_end::Float64
+#	wind_constant::Float64
+#	eps_U10_emulator::Interpolation
+#	
+#	buoyancy_enabled::Bool
+#	buoyancy_start::Float64
+#	buoyancy_end::Float64
+#	buoyancy_constant::Float64
+#end
+
+mutable struct ConvectionLakePhysicsScenario
+	enabled::Bool
+	start_depth::Float64
+	duration::Float64
+	scenario_end::Float64
+	total_energy::Float64
+	wind_fraction::Float64
 	eps_U10_emulator::Interpolation
-	
-	buoyancy_enabled::Bool
-	buoyancy_start::Float64
-	buoyancy_end::Float64
-	buoyancy_constant::Float64
 end
 
 include("eps_U10_emulator.jl")
 
 # Constructor for datastructure
-ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant) = begin
-	ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, eps_U10_emulator, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant)
+#ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant) = begin
+#	ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, eps_U10_emulator, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant)
+#end
+#precompile(ConvectionLakePhysicsScenario, (Bool,Float64,Float64,Float64,Interpolation,Bool,Float64,Float64,Float64))
+
+ConvectionLakePhysicsScenario(enabled, start_depth, duration, total_energy, wind_fraction) = begin
+	ConvectionLakePhysicsScenario(enabled, start_depth, duration, 0.0, total_energy, wind_fraction, eps_U10_emulator)
 end
-precompile(ConvectionLakePhysicsScenario, (Bool,Float64,Float64,Float64,Interpolation,Bool,Float64,Float64,Float64))
+precompile(ConvectionLakePhysicsScenario, (Bool,Float64,Float64,Float64,Float64))
 
 #=============================================
 Meteorological Forcing
@@ -304,12 +319,12 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 																							end
 # wind_speed
 @physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
-																				if scenario.wind_enabled & (t > scenario.wind_start) & (t < scenario.wind_end)
-																					scenario.eps_U10_emulator.at(u[1]*scenario.wind_constant)
-																				else
-																			    	f_wind*forcing.wind_speed.at(t)
-																			    end
-																			end
+																					if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
+																						scenario.eps_U10_emulator.at(u[1]*κ*scenario.total_energy*scenario.wind_fraction)
+																					else
+																						f_wind*forcing.wind_speed.at(t)
+																					end
+																				end
 
 
 # Heat flux
@@ -349,9 +364,9 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # Buoyancy Flux [m2 s-3]
 @physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = begin
 																				B0=-β*dTdt(p, u,t)
-																				if scenario.buoyancy_enabled & (t > scenario.buoyancy_start) & (t < scenario.buoyancy_end)
+																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
 																					if B0 > 0.0
-																						scenario.buoyancy_constant
+																						scenario.total_energy*(1.0-scenario.wind_fraction)
 																					else
 																						0.0
 																					end
@@ -366,6 +381,10 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 					# should be given as parameter in future versions!!
 					if u[1] > 15.9
 						return 0.0
+					end
+					# complete scenarios settings
+					if scenario.enabled & scenario.scenario_end == 0.0 & scenario.start_depth > u[1]
+						scenario.scenario_end = t+scenario.duration
 					end
 					#v=(2.0*ϵ_u(p, u, t, u[1])+(1.0+2.0*A)*ϵ_B(p,u,t))/(N2(p, u[1], u[5])*u[1])
 					v=(2.5*u_w(p, wind_speed_at(p,u,t))^3+(1.0+2.0*A)*w_star(p,u,t)^3)/(N2(p, u[1], u[5])*u[1]^2)
