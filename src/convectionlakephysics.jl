@@ -368,7 +368,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 																					#if B0 > 0.0
 																						scenario.total_energy*(1.0-scenario.wind_fraction)
 																					#else
-																						0.0
+																						#0.0
 																					#end
 																				else
 																					B0
