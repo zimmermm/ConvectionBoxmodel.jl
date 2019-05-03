@@ -383,7 +383,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 						return 0.0
 					end
 					# complete scenarios settings
-					if scenario.enabled & scenario.scenario_end == 0.0 & scenario.start_depth > u[1]
+					if scenario.enabled & (scenario.scenario_end == 0.0) & (scenario.start_depth > u[1])
 						scenario.scenario_end = t+scenario.duration
 					end
 					#v=(2.0*ϵ_u(p, u, t, u[1])+(1.0+2.0*A)*ϵ_B(p,u,t))/(N2(p, u[1], u[5])*u[1])
