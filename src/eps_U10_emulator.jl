@@ -1,5 +1,5 @@
 #===========================================
-Emulates the dependence between u_w^3 on U10
+Emulates the dependence between u_w^3/kappa on U10
 by a linear interpolation of precalculated
 values
 ===========================================#
