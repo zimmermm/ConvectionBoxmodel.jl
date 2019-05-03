@@ -389,9 +389,9 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 
 					#v=(2.0*ϵ_u(p, u, t, u[1])+(1.0+2.0*A)*ϵ_B(p,u,t))/(N2(p, u[1], u[5])*u[1])
 					v=(2.5*u_w(p, wind_speed_at(p,u,t))^3+(1.0+2.0*A)*w_star(p,u,t)^3)/(N2(p, u[1], u[5])*u[1]^2)
-					if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
-						println((2.5*u_w(p, wind_speed_at(p,u,t))^3+(1.0+2.0*A)*w_star(p,u,t)^3)/u[1])
-					end
+					#if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
+					#	println((2.5*u_w(p, wind_speed_at(p,u,t))^3+(1.0+2.0*A)*w_star(p,u,t)^3)/u[1])
+					#end
 					# don't allow rising of the thermocline
 					if v < 0.0
 						return 0.0
