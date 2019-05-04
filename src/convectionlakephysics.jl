@@ -365,6 +365,7 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 																				else
 																					(heat_flux_simstrat(p, wind_speed_at(p,u,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
 																				end
+																			end
 
 @physicsfn dTdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = heat_flux(p, u,t)/(rho*Cp)
 
