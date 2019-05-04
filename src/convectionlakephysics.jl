@@ -355,25 +355,23 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # total heat balance [W m-2]
 @physicsfn heat_flux_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(p, U10, Tw, Ta) + He_simstrat(p, U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(p, Ta, cloud_cover, vapour_pressure)+Hw_simstrat(p, Tw)+cheat3*global_radiation
 
-@physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = (heat_flux_simstrat(p, wind_speed_at(p,u,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
+@physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
+																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
+																					#if B0 > 0.0
+																					-scenario.total_energy*(1.0-scenario.wind_fraction)/1.4/β*(rho*Cp)
+																					#else
+																						#0.0
+																					#end
+																				else
+																					(heat_flux_simstrat(p, wind_speed_at(p,u,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
+																				end
 
 @physicsfn dTdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = heat_flux(p, u,t)/(rho*Cp)
 
 # Buoyancy foring: Convective thickening of the mixed layer
 ##########################################
 # Buoyancy Flux [m2 s-3]
-@physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = begin
-																				B0=-β*dTdt(p, u,t)
-																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
-																					#if B0 > 0.0
-																						scenario.total_energy*(1.0-scenario.wind_fraction)/1.4
-																					#else
-																						#0.0
-																					#end
-																				else
-																					B0
-																				end
-																			end
+@physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = -β*dTdt(p, u,t)
 # thickening rate
 # Zilitinkevich 1991 combined with Cushman-Roisin
 @physicsfn dhdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = begin
