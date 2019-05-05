@@ -18,7 +18,9 @@ end
 
 # read from tabular data
 function DataProfile(path)
-	profile_data = CSV.read(path, types=[Float64, Float64], allowmissing=:none)
+	profile_data = CSV.read(path, types=[Float64, Float64])
+	profile_data = profile_data[completecases(profile_data), :]
+	disallowmissing!(profile_data)
 	LinearInterpolation(profile_data[Symbol("Depth")], profile_data[Symbol("Value")])
 end
 precompile(DataProfile, (String,))
