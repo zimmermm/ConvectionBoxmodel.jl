@@ -345,15 +345,22 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # is given by forcing.global_radiation(t) (already corrected for albedo)
 #*** evaporation & condensation
 @physicsfn fu_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta) = 4.4+1.82*U10^2+0.26*(Tw-Ta)
+@physicsfn fu_simstrat_B(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta) = 4.4+0.26*(Tw-Ta)
+@physicsfn fu_simstrat_P(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta) = 1.82*U10^2
 @physicsfn e_s_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, Tw, Ta)=6.107*10^(7.5*(Tw-273.15)/(237.3+(Tw-273.15)))
 @physicsfn He_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, vapour_pressure) = -fu_simstrat(p, U10, Tw, Ta)*(e_s_simstrat(p, Tw, Ta)-vapour_pressure)
+@physicsfn He_simstrat_B(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, vapour_pressure) = -fu_simstrat_B(p, U10, Tw, Ta)*(e_s_simstrat(p, Tw, Ta)-vapour_pressure)
+@physicsfn He_simstrat_P(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, vapour_pressure) = -fu_simstrat_P(p, U10, Tw, Ta)*(e_s_simstrat(p, Tw, Ta)-vapour_pressure)
 #*** sensible heat
 @physicsfn Hc_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta) = -B*fu_simstrat(p, U10, Tw, Ta)*(Tw-Ta)
+@physicsfn Hc_simstrat_B(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta) = -B*fu_simstrat_B(p, U10, Tw, Ta)*(Tw-Ta)
+@physicsfn Hc_simstrat_P(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta) = -B*fu_simstrat_P(p, U10, Tw, Ta)*(Tw-Ta)
 #*** inflow/outflow
 @physicsfn Hfl(p::ConvectionLakePhysics{<:DefaultPhysics}, Ta,Tw,flow,temp,surface_area) = rho*Cp*flow/surface_area*(temp-Tw)
 
 # total heat balance [W m-2]
 @physicsfn heat_flux_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(p, U10, Tw, Ta) + He_simstrat(p, U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(p, Ta, cloud_cover, vapour_pressure)+Hw_simstrat(p, Tw)+cheat3*global_radiation
+@physicsfn heat_flux_simstrat_P(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat_P(p, U10, Tw, Ta) + He_simstrat_P(p, U10, Tw, Ta, vapour_pressure))
 
 @physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
 																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
@@ -368,11 +375,13 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 																			end
 
 @physicsfn dTdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = heat_flux(p, u,t)/(rho*Cp)
+@physicsfn dTdt_P(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = heat_flux_simstrat_P(p, wind_speed_at(p,u,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t))/(rho*Cp)
 
 # Buoyancy foring: Convective thickening of the mixed layer
 ##########################################
 # Buoyancy Flux [m2 s-3]
 @physicsfn buoyancy_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = -β*dTdt(p, u,t)
+@physicsfn buoyancy_flux_P(p::ConvectionLakePhysics{<:DefaultPhysics}, u,t) = -β*dTdt_P(p, u,t)
 # thickening rate
 # Zilitinkevich 1991 combined with Cushman-Roisin
 @physicsfn dhdt(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) = begin
