@@ -364,11 +364,11 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 
 @physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
 																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
-																					#if B0 > 0.0
-																					-scenario.total_energy*(1.0-scenario.wind_fraction)/1.4/β*(rho*Cp)
-																					#else
-																						#0.0
-																					#end
+																					# convective feedback from wind
+																					H_P = -10^(1.355*log10(scenario.total_energy*scenario.wind_fraction*u[1])+1.862)/1.4/β*(rho*Cp)
+																					# heat exchange
+																					H_B = -scenario.total_energy*(1.0-scenario.wind_fraction)/1.4/β*(rho*Cp)
+																					return H_P+H_B
 																				else
 																					(heat_flux_simstrat(p, wind_speed_at(p,u,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
 																				end
