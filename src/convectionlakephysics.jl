@@ -362,10 +362,25 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 @physicsfn heat_flux_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(p, U10, Tw, Ta) + He_simstrat(p, U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(p, Ta, cloud_cover, vapour_pressure)+Hw_simstrat(p, Tw)+cheat3*global_radiation
 @physicsfn heat_flux_simstrat_P(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat_P(p, U10, Tw, Ta) + He_simstrat_P(p, U10, Tw, Ta, vapour_pressure))
 
+# empirical relationship between u* and w* for lake rotsee
+@physicsfn wind_buoyancy_feedback(p::ConvectionLakePhysics{<:DefaultPhysics}, u, eps_P) = begin
+	u_star = (eps_P*κ*u[1])^(1/3)
+	if u_star <= 0.7e-3
+		10^(7.391*log10(u_star)-8.396e-1)
+	else
+		10^(1.478*log10(u_star)+1.461)
+	end
+end
+
 @physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
 																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
 																					# convective feedback from wind
-																					H_P = -10^(1.355*log10(scenario.total_energy*scenario.wind_fraction*u[1])+1.862)/1.4/β*(rho*Cp)
+																					if scenario.total_energy*scenario.wind_fraction*u[1] > 0.0
+																						w_star = wind_buoyancy_feedback(scenario.total_energy*scenario.wind_fraction)
+																						H_P = -(w_star^3)/u[1]/1.4/β*(rho*Cp)
+																					else
+																						H_P = 0.0
+																					end
 																					# heat exchange
 																					H_B = -scenario.total_energy*(1.0-scenario.wind_fraction)/1.4/β*(rho*Cp)
 																					return H_P+H_B
