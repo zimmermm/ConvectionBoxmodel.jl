@@ -376,7 +376,7 @@ end
 																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
 																					# convective feedback from wind
 																					if scenario.total_energy*scenario.wind_fraction*u[1] > 0.0
-																						w_star = wind_buoyancy_feedback(scenario.total_energy*scenario.wind_fraction)
+																						w_star = wind_buoyancy_feedback(p, u, scenario.total_energy*scenario.wind_fraction)
 																						H_P = -(w_star^3)/u[1]/1.4/β*(rho*Cp)
 																					else
 																						H_P = 0.0
