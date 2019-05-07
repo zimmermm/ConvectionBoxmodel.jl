@@ -320,7 +320,8 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 # wind_speed
 @physicsfn wind_speed_at(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
 																					if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
-																						scenario.eps_U10_emulator.at(u[1]*scenario.total_energy*scenario.wind_fraction/(2.5*κ))
+																						#scenario.eps_U10_emulator.at(u[1]*scenario.total_energy*scenario.wind_fraction/(2.5*κ))
+																						scenario.eps_U10_emulator.at((scenario.total_energy*scenario.wind_fraction)^3/κ)
 																					else
 																						f_wind*forcing.wind_speed.at(t)
 																					end
@@ -363,8 +364,15 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 @physicsfn heat_flux_simstrat_P(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat_P(p, U10, Tw, Ta) + He_simstrat_P(p, U10, Tw, Ta, vapour_pressure))
 
 # empirical relationship between u* and w* for lake rotsee
-@physicsfn wind_buoyancy_feedback(p::ConvectionLakePhysics{<:DefaultPhysics}, u, eps_P) = begin
-	u_star = (eps_P*κ*u[1])^(1/3)
+#@physicsfn wind_buoyancy_feedback(p::ConvectionLakePhysics{<:DefaultPhysics}, u, eps_P) = begin
+#	u_star = (eps_P*κ*u[1])^(1/3)
+#	if u_star <= 0.7e-3
+#		10^(7.391*log10(u_star)-8.396e-1)
+#	else
+#		10^(1.478*log10(u_star)+1.461)
+#	end
+#end
+@physicsfn wind_buoyancy_feedback(p::ConvectionLakePhysics{<:DefaultPhysics}, u, u_star) = begin
 	if u_star <= 0.7e-3
 		10^(7.391*log10(u_star)-8.396e-1)
 	else
@@ -375,14 +383,15 @@ end
 @physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
 																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
 																					# convective feedback from wind
-																					if scenario.total_energy*scenario.wind_fraction*u[1] > 0.0
+																					if scenario.total_energy*scenario.wind_fraction > 0.0
 																						w_star = wind_buoyancy_feedback(p, u, scenario.total_energy*scenario.wind_fraction)
 																						H_P = -(w_star^3)/u[1]/1.4/β*(rho*Cp)
 																					else
 																						H_P = 0.0
 																					end
 																					# heat exchange
-																					H_B = -scenario.total_energy*(1.0-scenario.wind_fraction)/1.4/β*(rho*Cp)
+																					w_star = scenario.total_energy*(1.0-scenario.wind_fraction) 
+																					H_B = -(w_star^3)/u[1]/1.4/β*(rho*Cp)
 																					return H_P+H_B
 																				else
 																					(heat_flux_simstrat(p, wind_speed_at(p,u,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
