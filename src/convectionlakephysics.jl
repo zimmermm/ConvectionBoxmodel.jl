@@ -375,8 +375,10 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 @physicsfn wind_buoyancy_feedback(p::ConvectionLakePhysics{<:DefaultPhysics}, u, u_star) = begin
 	if u_star <= 0.7e-3
 		10^(7.391*log10(u_star)-8.396e-1)
-	else
+	elseif u_star <= 5e-3
 		10^(1.478*log10(u_star)+1.461)
+	else
+		10^(5.0e-1*log10(u_star)-9.2e-1)
 	end
 end
 
