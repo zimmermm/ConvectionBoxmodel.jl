@@ -30,7 +30,8 @@ export	interp1d,
 		bottom
 
 # bathymetries
-export	surface_area,
+export	Bathymetry,
+		surface_area,
 		volume_above,
 		total_volume,
 		area_at
