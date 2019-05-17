@@ -7,20 +7,6 @@ TKE is artificially set to a constant
 value.
 =========================================#
 
-# Datastructure
-#struct ConvectionLakePhysicsScenario
-#	wind_enabled::Bool
-#	wind_start::Float64
-#	wind_end::Float64
-#	wind_constant::Float64
-#	eps_U10_emulator::Interpolation
-#	
-#	buoyancy_enabled::Bool
-#	buoyancy_start::Float64
-#	buoyancy_end::Float64
-#	buoyancy_constant::Float64
-#end
-
 mutable struct ConvectionLakePhysicsScenario
 	enabled::Bool
 	start_depth::Float64
@@ -32,12 +18,6 @@ mutable struct ConvectionLakePhysicsScenario
 end
 
 include("eps_U10_emulator.jl")
-
-# Constructor for datastructure
-#ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant) = begin
-#	ConvectionLakePhysicsScenario(wind_enabled, wind_start, wind_end, wind_constant, eps_U10_emulator, buoyancy_enabled, buoyancy_start, buoyancy_end, buoyancy_constant)
-#end
-#precompile(ConvectionLakePhysicsScenario, (Bool,Float64,Float64,Float64,Interpolation,Bool,Float64,Float64,Float64))
 
 ConvectionLakePhysicsScenario(enabled, start_depth, duration, total_energy, wind_fraction) = begin
 	ConvectionLakePhysicsScenario(enabled, start_depth, duration, 0.0, total_energy, wind_fraction, eps_U10_emulator)
@@ -363,38 +343,29 @@ const bi = [0.8181, -3.85e-3, 4.96e-5]
 @physicsfn heat_flux_simstrat(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat(p, U10, Tw, Ta) + He_simstrat(p, U10, Tw, Ta, vapour_pressure))+cheat2*Ha_simstrat(p, Ta, cloud_cover, vapour_pressure)+Hw_simstrat(p, Tw)+cheat3*global_radiation
 @physicsfn heat_flux_simstrat_P(p::ConvectionLakePhysics{<:DefaultPhysics}, U10, Tw, Ta, global_radiation, cloud_cover, vapour_pressure) = cheat1*(Hc_simstrat_P(p, U10, Tw, Ta) + He_simstrat_P(p, U10, Tw, Ta, vapour_pressure))
 
-# empirical relationship between u* and w* for lake rotsee
-#@physicsfn wind_buoyancy_feedback(p::ConvectionLakePhysics{<:DefaultPhysics}, u, eps_P) = begin
-#	u_star = (eps_P*κ*u[1])^(1/3)
-#	if u_star <= 0.7e-3
-#		10^(7.391*log10(u_star)-8.396e-1)
-#	else
-#		10^(1.478*log10(u_star)+1.461)
-#	end
-#end
-@physicsfn wind_buoyancy_feedback(p::ConvectionLakePhysics{<:DefaultPhysics}, u, u_star) = begin
+# empirical relationship between u* and B0 for lake rotsee
+@physicsfn wind_buoyancy_feedback(p::ConvectionLakePhysics{<:DefaultPhysics}, u_star) = begin
 	if u_star <= 0.8e-3
-		10^(7.202e-1*log10(u_star)-8.856e-1)
-	elseif u_star <= 5e-3
-		10^(1.397*log10(u_star)+1.220)
+		10^(2.144*log10(u_star)-3.654)
+	elseif u_star <= 4e-3
+		10^(3.932*log10(u_star)+1.956)
 	else
-		10^(5.476e-1*log10(u_star)-8.320e-1)
+		10^(1.569*log10(u_star)-3.731)
 	end
 end
 
 @physicsfn heat_flux(p::ConvectionLakePhysics{<:DefaultPhysics}, u, t) =	begin
 																				if scenario.enabled & (u[1] > scenario.start_depth) & (t < scenario.scenario_end)
-																					# convective feedback from wind
+																					# forced convection
+																					H_forced = 0.0
 																					if scenario.total_energy*scenario.wind_fraction > 0.0
-																						w_star = wind_buoyancy_feedback(p, u, scenario.total_energy*scenario.wind_fraction)
-																						H_P = -(w_star^3)/u[1]/1.4/β*(rho*Cp)
-																					else
-																						H_P = 0.0
+																						B0 = wind_buoyancy_feedback(p, scenario.total_energy*scenario.wind_fraction)
+																						H_forced = B0/β*(rho*Cp)
 																					end
 																					# heat exchange
-																					w_star = scenario.total_energy*(1.0-scenario.wind_fraction) 
-																					H_B = -(w_star^3)/u[1]/1.4/β*(rho*Cp)
-																					return H_P+H_B
+																					w_star_free = scenario.total_energy*(1.0-scenario.wind_fraction) 
+																					H_free = -(w_star_free^3)/u[1]/β*(rho*Cp)
+																					return H_forced+H_free
 																				else
 																					(heat_flux_simstrat(p, wind_speed_at(p,u,t), u[5], forcing.air_temperature.at(t), forcing.global_radiation.at(t), forcing.cloud_cover.at(t), forcing.vapour_pressure.at(t)))#+Hfl(p, forcing.air_temperature(t), u[5], inflow.flow(t), inflow.temperature(t))
 																				end
@@ -457,7 +428,7 @@ end
 																		if B0 <= 0.0
 																			return 0.0
 																		else
-																			return (buoyancy_flux(p,u,t)*u[1])^(1.0/3.0)
+																			return (B0*u[1])^(1.0/3.0)
 																		end
 																	 end
 
