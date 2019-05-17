@@ -360,7 +360,7 @@ end
 																					H_forced = 0.0
 																					if scenario.total_energy*scenario.wind_fraction > 0.0
 																						B0 = wind_buoyancy_feedback(p, scenario.total_energy*scenario.wind_fraction)
-																						H_forced = B0/β*(rho*Cp)
+																						H_forced = -B0/β*(rho*Cp)
 																					end
 																					# heat exchange
 																					w_star_free = scenario.total_energy*(1.0-scenario.wind_fraction) 
