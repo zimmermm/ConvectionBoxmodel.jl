@@ -449,13 +449,13 @@ end
 @physicsfn ϵ_u(p::ConvectionLakePhysics,u,t,z)= u_w(p, wind_speed_at(p,u,t))^3/(κ*z)
 @physicsfn ϵ_u(p::ConvectionLakePhysics,u,t)= ϵ_u(p,u,t,δv(p,wind_speed_at(p,u,t)))
 @physicsfn ϵ_B(p::ConvectionLakePhysics, u,t)=	begin
-							B0 = buoyancy_flux(p,u,t)
-							if B0 < 0.0
-								0.0
-							else
-								B0
-							end
-						end
+													B0 = buoyancy_flux(p,u,t)
+													if B0 < 0.0
+														0.0
+													else
+														B0
+													end
+												end
 
 @physicsfn ϵ(p::ConvectionLakePhysics,u,t) = ϵ_u(p,u,t)+ϵ_B(p,u,t)
 
